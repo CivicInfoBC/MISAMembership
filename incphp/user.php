@@ -6,6 +6,7 @@
 	require_once(WHERE_PHP_INCLUDES.'define.php');
 	require_once(WHERE_PHP_INCLUDES.'mb.php');
 	require_once(WHERE_PHP_INCLUDES.'crypto_random.php');
+	require_once(WHERE_PHP_INCLUDES.'utils.php');
 	
 	
 	//	Number of rounds to use in bcrypt hashing
@@ -39,7 +40,7 @@
 	 *	Manages logging users in and out
 	 *	and checking their sessions.
 	 */
-	class User {
+	class User implements arrayaccess {
 	
 	
 		private $row;
@@ -61,7 +62,7 @@
 		 *
 		 *	\return
 		 *		A User object representing the user
-		 *		on success, null otherwise.
+		 *		on success, \em null otherwise.
 		 */
 		public static function Login ($username, $password, $remember_me=true) {
 		
@@ -231,7 +232,7 @@
 		 *	\return
 		 *		The User object representing the user
 		 *		associated with the current session,
-		 *		or null if there is no session, or
+		 *		or \em null if there is no session, or
 		 *		if the session is invalid/expired.
 		 */
 		public static function Resume () {
@@ -289,6 +290,48 @@
 		
 		
 		/**
+		 *	Logs the currently logged in user out,
+		 *	destroyed their session cookie and
+		 *	eliminating the session from the database.
+		 *
+		 *	If there is no active session, nothing
+		 *	happens.
+		 */
+		public static function Logout () {
+		
+			//	Database access
+			global $dependencies;
+			$conn=$dependencies['MISADBConn'];
+			
+			//	Is there a session?
+			//
+			//	Short-circuit out if not
+			if (!isset($_COOKIE[LOGIN_COOKIE])) return;
+			
+			//	Delete the session from the
+			//	database
+			if ($conn->query(
+				sprintf(
+					'DELETE FROM `sessions` WHERE `key`=\'%s\'',
+					$conn->real_escape_string($_COOKIE[LOGIN_COOKIE])
+				)
+			)===false) throw new Exception($conn->error);
+			
+			//	Destroy the user's cookie
+			if (!setcookie(
+				LOGIN_COOKIE,
+				'',
+				1,
+				LOGIN_COOKIE_PATH,
+				LOGIN_COOKIE_DOMAIN,
+				LOGIN_COOKIE_HTTPS,
+				LOGIN_COOKIE_HTTP_ONLY
+			)) throw new Exception('Could not delete cookie');
+		
+		}
+		
+		
+		/**
 		 *	Creates a new user object from
 		 *	a database row.
 		 *
@@ -306,6 +349,174 @@
 			$this->row=$row;
 		
 		}
+		
+		
+		/**
+		 *	Retrieves the user's name by substituting
+		 *	into a format string.  The following
+		 *	substitutions are made:
+		 *
+		 *	-	\'F\' becomes the user's first name.
+		 *	-	\'L\' becomes the user's last name.
+		 *	-	\'f\' becomes the user's first
+		 *		initial.
+		 *	-	\'l\' becomes the user's last
+		 *		initial.
+		 *	-	\'e\' becomes the user's e-mail address
+		 *		case corrected to standard (all
+		 *		e-mail addresses are lowercase by
+		 *		definition and treated as such by
+		 *		conforming MTAs.
+		 *	-	\'E\' becomes the user's e-mail
+		 *		address case corrected to upper case.
+		 *	-	\'m\' becomes the user's e-mail
+		 *		address without case correction.
+		 *	-	\'U\' becomes the user's username
+		 *		with initial case correction (i.e.
+		 *		conversion of leading lowercase to
+		 *		uppercase).
+		 *	-	\'u\' becomes the user's username
+		 *		in lowercase.
+		 *	-	\'n\' becomes the user's username
+		 *		without case correction.
+		 *
+		 *	All other characters are unaffected.
+		 *
+		 *	\param [in] $format
+		 *		The format string into which substitutions
+		 *		shall be made.  Defaults to \'F L\' which
+		 *		shall output the user's full name with
+		 *		case corrections.
+		 *
+		 *	\return
+		 *		The formatted string.
+		 */
+		public function Name ($format='F L') {
+		
+			if (is_null($format)) return null;
+		
+			//	For capture by lambda
+			$row=$this->row;
+		
+			return preg_replace_callback(
+				'/[FLfleEmUun]/u',
+				function ($matches) use ($row) {
+				
+					switch ($matches[0]) {
+					
+						case 'F':
+							return FormatName($row['first_name']->GetValue());
+						case 'f':
+							//	Have to use preg_split otherwise
+							//	code points represented by multiple
+							//	code units will become mangled and
+							//	illegal
+							$split=preg_split(
+								'/(?<!^)(?!$)/u',
+								$row['first_name']->GetValue()
+							);
+							if (count($split)===0) return '';
+							return MBString::ToUpper($split[0]);
+						case 'L':
+							return FormatName($row['last_name']->GetValue());
+						case 'l':
+							$split=preg_split(
+								'/(?<!^)(?!$)/u',
+								$row['last_name']->GetValue()
+							);
+							if (count($split)===0) return '';
+							return MBString::ToUpper($split[0]);
+						case 'e':
+							return MBString::ToLower($row['email']->GetValue());
+						case 'E':
+							return MBString::ToUpper($row['email']->GetValue());
+						case 'm':
+							return $row['email']->GetValue();
+						case 'U':
+							return preg_replace_callback(
+								'/^./u',
+								function ($matches) {	return MBString::ToUpper($matches[0]);	},
+								MBString::ToLower($row['username']->GetValue())
+							);
+						case 'u':
+							return MBString::ToLower($row['username']->GetValue());
+						case 'n':
+							return $row['username']->GetValue();
+						default:
+							//	This should never happen,
+							//	but just in case...
+							return $matches[0];
+					
+					}
+				
+				},
+				$format
+			);
+		
+		}
+		
+		
+		/**
+		 *	Checks to see if this user has a certain
+		 *	property associated with them.
+		 *
+		 *	Note that unlike the PHP built-in semantics,
+		 *	a property may exist but have a value of
+		 *	\em null.
+		 *
+		 *	\param [in] $offset
+		 *		The property whose existence shall be
+		 *		checked.
+		 *
+		 *	\return
+		 *		\em true if the property exists,
+		 *		\em false otherwise.
+		 */
+		public function offsetExists ($offset) {
+		
+			return isset($this->row[$offset]);
+		
+		}
+		
+		
+		/**
+		 *	Retrieves the value of a property.
+		 *
+		 *	\param [in] $offset
+		 *		The property to retrieve.
+		 *
+		 *	\return
+		 *		The value of the property given by
+		 *		\em offset, or \em null if that
+		 *		property does not exist.
+		 */
+		public function offsetGet ($offset) {
+		
+			if (isset($this->row[$offset])) return $this->row[$offset]->GetValue();
+			
+			return null;
+		
+		}
+		
+		
+		/**
+		 *	Does nothing.
+		 *
+		 *	\param [in] $offset
+		 *		Ignored.
+		 *	\param [in] $value
+		 *		Ignored.
+		 */
+		public function offsetSet ($offset, $value) {	}
+		
+		
+		/**
+		 *	Does nothing.
+		 *
+		 *	\param [in] $offset
+		 *		Ignored.
+		 */
+		public function offsetUnset ($offset) {	}
 	
 	
 	}
