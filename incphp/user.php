@@ -291,7 +291,7 @@
 		
 		/**
 		 *	Logs the currently logged in user out,
-		 *	destroyed their session cookie and
+		 *	destroying their session cookie and
 		 *	eliminating the session from the database.
 		 *
 		 *	If there is no active session, nothing

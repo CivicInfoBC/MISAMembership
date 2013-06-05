@@ -68,6 +68,11 @@ CREATE TABLE `organizations` (
 	`contact_title` varchar(255) NOT NULL,
 	`contact_email` varchar(255) NOT NULL,
 	`contact_phone` varchar(50) NOT NULL,
+	--	What does this field actually mean?
+	--	Jason mentioned the ability to have
+	--	organizations flagged as perpetual,
+	--	but I'm not sure what, exactly, that
+	--	means.
 	`perpetual` bool NOT NULL DEFAULT '0',
 	PRIMARY KEY (`id`),
 	FOREIGN KEY (`membership_type_id`) REFERENCES `membership_types`(`id`)
@@ -183,6 +188,7 @@ CREATE TABLE `users` (
 	`activation_key` varchar(128) DEFAULT NULL,
 	`enabled` bool NOT NULL DEFAULT '0',
 	`subscribed` bool NOT NULL DEFAULT '0',
+	`admin` bool NOT NULL DEFAULT '0',
 	PRIMARY KEY (`id`),
 	FOREIGN KEY (`org_id`) REFERENCES `organizations`(`id`),
 	--	Why is this necessarily unique?
@@ -200,6 +206,10 @@ CREATE TABLE `users` (
  *	Contains the keys that API users
  *	will have to supply to access the
  *	API.
+ *
+ *	Maybe we want to add a field that
+ *	controls the kind of access people
+ *	querying with this API key have?
  */
 CREATE TABLE `api_keys` (
 	--	128-bit key
@@ -254,6 +264,11 @@ CREATE TABLE `sessions` (
 
 /*
  *	Test user
+ *
+ *	Password is "password", this test
+ *	user uses the old, insecure hashing
+ *	method to test the automatic
+ *	switch over mechanism.
  */
 INSERT INTO `users` (
 	`first_name`,
