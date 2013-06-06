@@ -7,7 +7,6 @@
 	//	SQL Constants
 	def('SQL_HOST','127.0.0.1:3306');
 	def('SQL_CHARSET','utf8mb4');
-	def('SQL_ERROR_TEMPLATE','SQL Error: %1$s - %2$s');
 	
 	
 	//	MISA Database Constants

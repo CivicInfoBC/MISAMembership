@@ -41,7 +41,7 @@ CREATE TABLE `membership_types` (
 CREATE TABLE `organizations` (
 	`id` int(11) unsigned NOT NULL AUTO_INCREMENT,
 	`org_name` varchar(255) NOT NULL,
-	`address1` varchar(255) NOT NULL,
+	`address1` varchar(255) DEFAULT NULL,
 	--	Existing database does not have
 	--	this field nullable, but most
 	--	results do not have this field,
@@ -50,11 +50,17 @@ CREATE TABLE `organizations` (
 	--	nullable since no data is an
 	--	acceptable state for it
 	`address2` varchar(255) DEFAULT NULL,
-	`city` varchar(255) NOT NULL,
-	`postal_code` varchar(16) NOT NULL,
-	`province` char(2) NOT NULL DEFAULT 'BC',
-	`country` varchar(30) NOT NULL DEFAULT 'Canada',
-	`org_phone` varchar(50) NOT NULL,
+	`city` varchar(255) DEFAULT NULL,
+	`postal_code` varchar(16) DEFAULT NULL,
+	`territorial_unit` char(255) DEFAULT 'BC',
+	`country` varchar(30) DEFAULT 'Canada',
+	--	This isn't present in the old schema so it
+	--	has to be nullable to import data from that
+	--	schema
+	`phone` varchar(50) DEFAULT NULL,
+	--	Adding this for consistency with contact
+	--	information, can be removed
+	`fax` varchar(50) DEFAULT NULL,
 	--	Is this optional?  Should it be nullable?
 	--	Existing database appears to use zero
 	--	as faux NULL, (which will not work
@@ -64,21 +70,37 @@ CREATE TABLE `organizations` (
 	--	organizations to not have a membership
 	--	type this should be nullable.
 	`membership_type_id` int(11) unsigned NOT NULL,
-	`contact_name` varchar(255) NOT NULL,
-	`contact_title` varchar(255) NOT NULL,
-	`contact_email` varchar(255) NOT NULL,
-	`contact_phone` varchar(50) NOT NULL,
+	`contact_name` varchar(255) DEFAULT NULL,
+	`contact_title` varchar(255) DEFAULT NULL,
+	`contact_email` varchar(255) DEFAULT NULL,
+	`contact_phone` varchar(50) DEFAULT NULL,
+	--	These were not in original, new schema
+	--	but are widely-populated in old data
+	--	so I'm adding them.
+	--
+	--	Can be removed if needed
+	`contact_fax` varchar(50) DEFAULT NULL,
+	`secondary_contact_name` varchar(255) DEFAULT NULL,
+	`secondary_contact_title` varchar(255) DEFAULT NULL,
+	`secondary_contact_email` varchar(255) DEFAULT NULL,
+	`secondary_contact_phone` varchar(50) DEFAULT NULL,
+	`secondary_contact_fax` varchar(50) DEFAULT NULL,
 	--	What does this field actually mean?
 	--	Jason mentioned the ability to have
 	--	organizations flagged as perpetual,
 	--	but I'm not sure what, exactly, that
 	--	means.
 	`perpetual` bool NOT NULL DEFAULT '0',
+	--	This field was not in original new
+	--	schema, but I added it because
+	--	existing table has it and it's
+	--	widely populated with seemingly-
+	--	meaningful data
+	`enabled` bool DEFAULT NULL,
 	PRIMARY KEY (`id`),
 	FOREIGN KEY (`membership_type_id`) REFERENCES `membership_types`(`id`)
 	--	Existing table has the following fields:
 	--
-	--		enabled
 	--		paymentStatus
 	--		gst_exempt
 	--		gst_number
@@ -137,7 +159,7 @@ CREATE TABLE `users` (
 	`first_name` varchar(255) NOT NULL,
 	`last_name` varchar(255) NOT NULL,
 	`email` varchar(127) NOT NULL,
-	`title` varchar(255) NOT NULL,
+	`title` varchar(255) DEFAULT NULL,
 	--	Added `username` and `password` from
 	--	old users table, if they're not needed
 	--	they can be removed.
@@ -174,11 +196,17 @@ CREATE TABLE `users` (
 	`address` varchar(255) DEFAULT NULL,
 	`address2` varchar(255) DEFAULT NULL,
 	`city` varchar(255) DEFAULT NULL,
-	`province` varchar(64) DEFAULT NULL,
+	`territorial_unit` varchar(255) DEFAULT NULL,
 	`postal_code` varchar(16) DEFAULT NULL,
 	`country` varchar(64) DEFAULT NULL,
 	`phone` varchar(50) DEFAULT NULL,
+	--	Why do users have a cellphone field,
+	--	but not organizational contacts?
 	`cell` varchar(50) DEFAULT NULL,
+	--	Included this because it was in
+	--	old schema, can be removed if
+	--	desired
+	`fax` varchar(50) DEFAULT NULL,
 	--	Can users exist without being
 	--	paired with an organization?
 	--	I.e. should this really be
@@ -186,7 +214,7 @@ CREATE TABLE `users` (
 	`org_id` int(11) unsigned DEFAULT NULL,
 	--	What is this field for?
 	`activation_key` varchar(128) DEFAULT NULL,
-	`enabled` bool NOT NULL DEFAULT '0',
+	`enabled` bool NOT NULL DEFAULT '1',
 	`subscribed` bool NOT NULL DEFAULT '0',
 	`admin` bool NOT NULL DEFAULT '0',
 	PRIMARY KEY (`id`),

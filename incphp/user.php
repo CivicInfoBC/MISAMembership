@@ -199,7 +199,7 @@
 			)===false) throw new Exception($conn->error);
 			
 			//	If $remember_me is false, cookie
-			//	expires when user closes browse
+			//	expires when user closes browser
 			if (!$remember_me) $expiry=0;
 			
 			//	Send the cookie
