@@ -26,10 +26,7 @@
 	
 		if (
 			is_null($val) ||
-			(
-				is_string($val) &&
-				($val==='')
-			)
+			($val==='')
 		) return 'NULL';
 		
 		return sprintf(
@@ -313,7 +310,7 @@
 		if ($new_conn->query(
 			sprintf(
 				'INSERT INTO `organizations` (
-					`org_name`,
+					`name`,
 					`address1`,
 					`address2`,
 					`city`,
@@ -393,10 +390,9 @@
 			`users`.*,
 			`organizations`.`name` AS `organization_name`
 		FROM
-			`users`,
-			`organizations`
-		WHERE
-			`organizations`.`id`=`users`.`organizationsId`'
+			`users`
+			LEFT OUTER JOIN `organizations`
+			ON `organizations`.`id`=`users`.`organizationsId`'
 	);
 	
 	//	Die on error
@@ -428,9 +424,11 @@
 		
 		//	We need to get the new ID for this user's
 		//	organization, if they have one
+		if (is_null($row['organization_name'])) {
 		
-		//	Do a preliminary sanity check before proceeding
-		if (is_numeric($row['organization_name'])) {
+			$org_id=null;
+		
+		} else {
 		
 			$org_query=$new_conn->query(
 				sprintf(
@@ -438,27 +436,25 @@
 						`id`
 					FROM
 						`organizations`
-					WHERE `name`=\'%s\'',
-					$new_conn->real_escape
+					WHERE
+						`name`=\'%s\'',
+					$new_conn->real_escape_string($row['organization_name'])
 				)
 			);
 			
-			//	Check for error
 			if ($org_query===false) die($new_conn->error);
 			
-			//	Check to see if there are results
-			if ($org_query->num_rows===0) $org_id=null;
-			else {
+			if ($org_query->num_rows===0) {
+			
+				$org_id=null;
+			
+			} else {
 			
 				$org_row=$org_query->fetch_assoc();
 				
 				$org_id=$org_row['id'];
 			
 			}
-		
-		} else {
-		
-			$org_id=null;
 		
 		}
 		

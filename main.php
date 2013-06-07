@@ -34,6 +34,8 @@
 	def('WHERE_IMAGES','./images/');
 	def('NO_LOGIN_CONTROLLER','login.php');	//	Users who aren't logged in can only login
 	def('DEFAULT_CONTROLLER','');	//	TDB
+	def('API_CONTROLLER','api.php');	//	Controller for API functions
+	def('API_ARG','api');	//	Handled during pre-routing so API calls don't get GUI login functionality
 	def('WHERE_LOCAL_PHP_INCLUDES',WHERE_PHP_INCLUDES);
 	def('DEBUG',false);
 	def('TRUE_STRING','true');
@@ -57,7 +59,7 @@
 	require_once(WHERE_PHP_INCLUDES.'mb.php');						//	Multi-byte string handling
 	require_once(WHERE_PHP_INCLUDES.'template.php');				//	Templating engine
 	require_once(WHERE_PHP_INCLUDES.'dependency_container.php');	//	Dependency handling/resolution
-	require_once(WHERE_PHP_INCLUDES.'request.php');					//	Request/sit abstraction/encapsulation
+	require_once(WHERE_LOCAL_PHP_INCLUDES.'request.php');			//	Request/sit abstraction/encapsulation
 	require_once(SITE_ROOT.'dependencies.php');						//	Definition of all dependencies
 	require_once(WHERE_PHP_INCLUDES.'utils.php');					//	Misc utilities
 	require_once(WHERE_PHP_INCLUDES.'html_element.php');			//	HTML element
@@ -87,7 +89,7 @@
 		
 		//	Setup request object
 		
-		//	First we check to see if the pre-rewriting
+		//	First we check to see if the pre-rewritten
 		//	URL is available
 		//
 		//	If it's not, we error out
@@ -109,71 +111,24 @@
 			SITE_ROOT_URL
 		);
 		
-		//	Handle user login/session/logout
-		
-		//	Allows login/logout events
-		//	to be conveniently detected
-		//	and presented by later code
-		$login=false;
-		$logout=false;
-		
-		//	Login?
-		if (
-			//	Check for the GET key that indicates
-			//	a login should take place
-			MBString::Compare(
-				$request->GetQueryString(LOGIN_KEY),
-				TRUE_STRING
-			) &&
-			//	Check to make sure POST variable
-			//	exist (i.e. this is a POST request)
-			isset($_POST) &&
-			//	Check for username POST variable
-			isset($_POST[USERNAME_KEY]) &&
-			//	Check for password POST variable
-			isset($_POST[PASSWORD_KEY])
-		) {
-		
-			$login=true;
-		
-			//	Execute login
-			$user=User::Login(
-				$_POST[USERNAME_KEY],
-				$_POST[PASSWORD_KEY]
-			);
-		
-		//	Logout?
-		} else if (MBString::Compare(
-			$request->GetQueryString(LOGOUT_KEY),
-			TRUE_STRING
+		//	Pre-route -- detect API requests
+		if (MBString::Compare(
+			$request->GetController(),
+			API_ARG
 		)) {
 		
-			$logout=true;
-			
-			User::Logout();
-			
-			$user=null;
+			//	Hand off control to API controller
+			require(WHERE_CONTROLLERS.API_CONTROLLER);
 		
-		//	Attempt to resume session
+		//	Continue as normal
 		} else {
-		
-			$user=User::Resume();
 		
 		}
 		
 		
-		var_dump($user);
-		
-		
 	} catch (Exception $e) {
 	
-		//	Print actual error if debug is on
-		if (DEBUG) error(
-			HTTP_INTERNAL_SERVER_ERROR,
-			$e->message
-		);
-		//	Otherwise just print a generic
-		//	error message
+		if (DEBUG) error(HTTP_INTERNAL_SERVER_ERROR,$e->message);
 		else error(HTTP_INTERNAL_SERVER_ERROR);
 	
 	}

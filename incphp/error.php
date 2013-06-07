@@ -16,6 +16,7 @@
 	define('HTTP_BAD_REQUEST',400);
 	define('HTTP_INTERNAL_SERVER_ERROR',500);
 	define('HTTP_FILE_NOT_FOUND',404);
+	define('HTTP_FORBIDDEN',403);
 
 
 	function error ($param=null, $desc=null) {
@@ -51,6 +52,15 @@
 				).
 				'http_error_codes.php'
 			);
+			
+			$http_header='HTTP/1.1 '.$param;
+			
+			if (
+				isset($http_error_code_map[$param]) &&
+				isset($http_error_code_map[$param]['title'])
+			) $http_header.=' '.$http_error_code_map[$param]['title'];
+			
+			header($http_header);
 		
 		}
 		

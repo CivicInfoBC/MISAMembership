@@ -7,8 +7,12 @@
 	require_once(WHERE_PHP_INCLUDES.'mb.php');
 	require_once(WHERE_PHP_INCLUDES.'crypto_random.php');
 	require_once(WHERE_PHP_INCLUDES.'utils.php');
+	require_once(WHERE_LOCAL_PHP_INCLUDES.'organization.php');
 	
 	
+	//	Database dependency to use for logging
+	//	users in et cetera
+	def('USER_DB','MISADBConn');
 	//	Number of rounds to use in bcrypt hashing
 	//	of passwords
 	def('BCRYPT_ROUNDS',15);
@@ -34,20 +38,183 @@
 	//	This must be set by user configuration,
 	//	if it's not we cannot proceed
 	if (!defined('LOGIN_COOKIE_DOMAIN')) error(HTTP_INTERNAL_SERVER_ERROR);
-
-
+	
+	
 	/**
-	 *	Manages logging users in and out
-	 *	and checking their sessions.
+	 *	Communicates the status of a login
+	 *	attempt.
 	 */
-	class User implements arrayaccess {
+	class LoginAttempt {
 	
 	
-		private $row;
+		/**
+		 *	Maps reason codes to a human-readable
+		 *	message.
+		 */
+		private static $codes=array(
+			0 => 'Login successful',
+			1 => 'Incorrect username or password',
+			2 => 'Your account is disabled',
+			3 => 'Your organization is disabled',
+			4 => 'Your membership fees are unpaid',
+			5 => 'No active session',
+			6 => 'Invalid session'
+		);
+		/**
+		 *	The User object which corresponds to this
+		 *	login attempt, or \em null if there was
+		 *	no matching User.
+		 */
+		public $user;
+		/**
+		 *	The code which represents the result of this
+		 *	login attempt.
+		 */
+		public $code;
+		/**
+		 *	The reason string which corresponds to the
+		 *	result of this login attempt.
+		 */
+		public $reason;
 		
 		
 		/**
-		 *	Attempts to log a user in and
+		 *	Creates a new LoginAttempt object.
+		 *
+		 *	\param [in] $code
+		 *		The code which corresponds to the
+		 *		result of the login attempt.
+		 *	\param [in] $user
+		 *		The user logged in (or not logged
+		 *		in), if applicable.  If not applicable
+		 *		set to \em null.  Defaults to \em null.
+		 */
+		public function __construct ($code, $user=null) {
+		
+			if (!in_array($code,array_keys(self::$codes),true)) throw new Exception('Unrecognized login code');
+			
+			$this->code=$code;
+			$this->reason=self::$codes[$code];
+			$this->user=$user;
+		
+		}
+		
+		
+		/**
+		 *	Converts this object to an array for
+		 *	convenient JSON serialization.
+		 *
+		 *	\return
+		 *		An associative array representing
+		 *		this object.
+		 */
+		public function ToArray () {
+		
+			return array(
+				'user' => is_null($this->user) ? null : $this->user->ToArray(),
+				'code' => $this->code,
+				'reason' => $this->reason
+			);
+		
+		}
+	
+	
+	}
+	
+	
+	/**
+	 *	Encapsulates a user, their corresponding organization
+	 *	(if they have one), and defined functions for logging
+	 *	users in and out.
+	 */
+	class User implements IteratorAggregate {
+	
+	
+		private $user;
+		private $org;
+		private $session_key;
+		private $session_expiry;
+		
+		
+		private function __construct () {
+		
+			$this->user=null;
+			$this->org=null;
+			$this->session_key=null;
+		
+		}
+		
+		
+		/**
+		 *	Checks to see if the user
+		 *	account-in-question is able to login
+		 *	independent of correct username/password.
+		 *
+		 *	The criteria used are:
+		 *
+		 *		-	To login a user's organization
+		 *			must be enabled.
+		 *		-	To login a user's organization
+		 *			must not owe any dues.
+		 *		-	To login a user must be
+		 *			enabled.
+		 *
+		 *	Checks related to organization are
+		 *	bypassed should the user not be a member
+		 *	of an organization.
+		 *
+		 *	\param [in] $code
+		 *		An option by reference parameter
+		 *		which will communicate the reason
+		 *		a check failed.
+		 *
+		 *	\return
+		 *		\em true if the user may login,
+		 *		\em false otherwise.
+		 */
+		public function Check (&$code=null) {
+		
+			//	Perform organization-related checks
+			//	if applicable
+			if (!is_null($this->org)) {
+			
+				if (!$this->org->has_paid) {
+				
+					$code=4;
+					
+					return false;
+				
+				}
+				
+				if (!$this->org->enabled) {
+				
+					$code=3;
+					
+					return false;
+				
+				}
+			
+			}
+			
+			//	Check to make sure individual
+			//	user account is enabled
+			if ($this->enabled) {
+			
+				$code=0;
+			
+				return true;
+			
+			}
+			
+			$code=2;
+			
+			return false;
+		
+		}
+		
+		
+		/**
+		 *	Attempts to log a user in and possibly
 		 *	generate them a session.
 		 *
 		 *	\param [in] $username
@@ -57,32 +224,54 @@
 		 *	\param [in] $remember_me
 		 *		\em true if the user should be
 		 *		remembered past the end of this
-		 *		browser session, \em false
-		 *		otherwise.  Defaults to \em true.
+		 *		browser session, \em false if
+		 *		they should be remembered only
+		 *		until the end of this session,
+		 *		and \em null if no session
+		 *		should be generated for them
+		 *		at all.  Defaults to \em true.
+		 *	\param [in] $real_ip
+		 *		The real IP the user is logging in
+		 *		from, to be used if the user is
+		 *		being logged in by a remote server
+		 *		through the API.  This is to be set
+		 *		to the actual IP of the client.
+		 *		Defaults to \em null.
 		 *
 		 *	\return
-		 *		A User object representing the user
-		 *		on success, \em null otherwise.
+		 *		A LoginAttempt object representing
+		 *		the result of this login attempt.
 		 */
-		public static function Login ($username, $password, $remember_me=true) {
+		public static function Login ($username, $password, $remember_me=true, $real_ip=null) {
 		
-			//	Database access
-			global $dependencies;
-			$conn=$dependencies['MISADBConn'];
+			//	Guard against nulls
+			if (
+				is_null($username) ||
+				is_null($password)
+			) return new LoginAttempt(1);
 			
-			//	Lowercase usernames and
-			//	leading- and trailing-whitespace
-			//	agnostic
+			//	Sanitize username, remove leading/
+			//	trailing whitespace, make all
+			//	lower case.
 			$username=MBString::ToLower(
 				MBString::Trim(
 					$username
 				)
 			);
 			
-			//	Select the appropriate user
+			//	Database access
+			global $dependencies;
+			$conn=$dependencies[USER_DB];
+			
+			//	Grab the user from the database
 			$query=$conn->query(
 				sprintf(
-					'SELECT * FROM `users` WHERE `username`=\'%s\'',
+					'SELECT
+						*
+					FROM
+						`users`
+					WHERE
+						`username`=\'%s\'',
 					$conn->real_escape_string($username)
 				)
 			);
@@ -90,88 +279,117 @@
 			//	Throw on error
 			if ($query===false) throw new Exception($conn->error);
 			
-			//	Failure if there are no
-			//	matching rows
-			if ($query->num_rows===0) return null;
+			//	Failure if there are no matching rows
+			if ($query->num_rows===0) return new LoginAttempt(1);
 			
 			//	Extract row
 			$row=new MySQLRow($query);
 			
-			//	Time to check the password
+			//	We know user exists, check to
+			//	see if password is correct
 			
 			$bcrypt=new Bcrypt(BCRYPT_ROUNDS);
 			
-			//	Does the database have a bcrypt or
-			//	MD5 hashed password?
+			//	Due to legacy support, the database
+			//	might contain either a bcrypted
+			//	hashed and salted password, or
+			//	an MD5 hashed password.
 			//
-			//	bcrypt hashes always begin with $2,
-			//	whereas MD5 hashes can't contain
-			//	the '$' character at all, so we
-			//	check for that to tell the difference
+			//	All bcrypt hashes begin with the \'$\'
+			//	character, whereas MD5 hashes cannot
+			//	contain the \'$\' character at all
+			//	(as they're represented as hex), therefore
+			//	we can tell which kind of hash in in
+			//	the database by checking for a leading
+			//	\'$\'.
 			if (preg_match(
 				'/^\\$/u',
 				$row['password']
-			)!==0) {
+			)===0) {
 			
-				//	bcrypt
+				//	MD5 (legacy)
 				
-				//	If hashed password from database
-				//	and hashed password from user don't
-				//	match, don't log them in
-				if (!$bcrypt->verify($password,$row['password']->GetValue())) return null;
-			
-			} else {
-			
-				//	MD5
+				//	Verify
+				if (md5($password)!==$row['password']->GetValue()) return new LoginAttempt(1);
 				
-				//	Verify and fail if hashes
-				//	don't match
-				if (md5($password)!==$row['password']->GetValue()) return null;
-				
-				//	We now know that the password
-				//	the user supplies is the plaintext
-				//	which hashes to the MD5 hash
-				//	from the database.
+				//	The user-supplied password is correct,
+				//	which means that $password contains
+				//	the plaintext which hashes to the
+				//	MD5 hash contained in the database.
 				//
-				//	This means that we can transparently
-				//	replace their MD5 hashed password
-				//	with a new, more secure, bcrypted hash.
-				$hash=$bcrypt->hash($password);
-				
+				//	MD5 is a weak hash, independent of any
+				//	best practices, but without some kind
+				//	of salt attacking the passwords is
+				//	extremely easy.
+				//
+				//	bcrypt is a modern password hashing
+				//	algorithm with salting built right in.
+				//	It's considered secure.
+				//
+				//	Switch the legacy MD5 hash over to a
+				//	modern bcrypt hash to improve the security
+				//	of this user's login
 				if ($conn->query(
 					sprintf(
-						'UPDATE `users` SET `password`=\'%s\' WHERE `username`=\'%s\'',
-						$conn->real_escape_string($hash),
+						'UPDATE
+							`users`
+						SET
+							`password`=\'%s\'
+						WHERE
+							`username`=\'%s\'',
+						$conn->real_escape_string(
+							//	New bcrypt hash
+							$bcrypt->hash($password)
+						),
 						$conn->real_escape_string($username)
 					)
 				)===false) throw new Exception($conn->error);
 			
+			} else {
+			
+				//	bcrypt (modern)
+				
+				//	Verify
+				if (!$bcrypt->verify($password,$row['password']->GetValue())) return new LoginAttempt(1);
+			
 			}
 			
-			//	User verified, give them a session
-			//	cookie
+			//	Now that the user is verified, create
+			//	them an object and start filling in
+			//	details
+			$user=new User();
+			$user->user=$row;
 			
-			//	Generate a 128-bit cryptographically
+			//	Grab information about the user's
+			//	organization
+			$user->org=Organization::GetByID($row['org_id']->GetValue());
+			
+			//	Check to make sure user can
+			//	login
+			if (!$user->Check($code)) return new LoginAttempt(
+				$code,
+				$user
+			);
+			
+			//	User is allowed to login
+			
+			//	Generate 128-bit cryptographically
 			//	secure random number to use as the
 			//	user's session key
-			$key=bin2hex(CryptoRandom(128/8));
+			$user->session_key=bin2hex(CryptoRandom(128/8));
 			
-			//	Deduce the expiry time
-			
-			//	Add expiry time to current
-			//	UNIX timestamp
+			//	Deduce the time at which the session
+			//	key we just generated ought to
+			//	expire
 			$expiry=intval(time()+LOGIN_COOKIE_EXPIRY);
-			//	Detect overflow and correct
-			//	as best possible
+			//	Detect overflow and correct as best
+			//	possible
 			if ($expiry<0) $expiry=PHP_INT_MAX;
+			//	Set
+			$user->session_expiry=new DateTime();
+			$user->session_expiry->setTimestamp($expiry);
 			
-			//	Format MySQL expiry
-			$mysql_expiry=new DateTime();
-			$mysql_expiry->setTimestamp($expiry);
-			$mysql_expiry=$mysql_expiry->format('Y-m-d H:i:s');
-			
-			//	Attempt to create session in
-			//	the database
+			//	Create session in database
 			if ($conn->query(
 				sprintf(
 					'INSERT INTO `sessions` (
@@ -191,162 +409,180 @@
 						NOW(),
 						\'%4$s\'
 					)',
-					$conn->real_escape_string($key),
-					$conn->real_escape_string($row['id']->GetValue()),
-					$conn->real_escape_string($_SERVER['REMOTE_ADDR']),
-					$conn->real_escape_string($mysql_expiry)
+					$conn->real_escape_string($user->session_key),
+					$conn->real_escape_string($user->id),
+					$conn->real_escape_string(
+						is_null($real_ip)
+							?	$_SERVER['REMOTE_ADDR']
+							:	$real_ip
+					),
+					$conn->real_escape_string($user->session_expiry->format('Y-m-d H:i:s'))
 				)	
 			)===false) throw new Exception($conn->error);
 			
-			//	If $remember_me is false, cookie
-			//	expires when user closes browser
-			if (!$remember_me) $expiry=0;
+			//	If $remember_me is null, bypass setting
+			//	cookie
+			if (!is_null($remember_me)) {
 			
-			//	Send the cookie
-			if (!setcookie(
-				LOGIN_COOKIE,
-				$key,
-				$expiry,
-				LOGIN_COOKIE_PATH,
-				LOGIN_COOKIE_DOMAIN,
-				LOGIN_COOKIE_HTTPS,
-				LOGIN_COOKIE_HTTP_ONLY
-			)) throw new Exception('Could not set cookie');
+				//	If $remember_me is false, cookie
+				//	expires when user closes browser
+				if (!$remember_me) $expiry=0;
+				
+				//	Send the cookie
+				if (!setcookie(
+					LOGIN_COOKIE,
+					$user->session_key,
+					$expiry,
+					LOGIN_COOKIE_PATH,
+					LOGIN_COOKIE_DOMAIN,
+					LOGIN_COOKIE_HTTPS,
+					LOGIN_COOKIE_HTTP_ONLY
+				)) throw new Exception('Could not set cookie');
 			
-			//	Legacy password hash algorithm
-			//	update complete, user verified,
-			//	and session created, so we
-			//	create an object and return it
-			//	to notify the caller that the
-			//	user has been logged in and
-			//	supply them with their information
-			return new User($row);
+			}
+			
+			//	Return the user object and signal
+			//	login success
+			return new LoginAttempt(0,$user);
 		
 		}
 		
 		
 		/**
-		 *	Attempts to retrieve the user associated
-		 *	with this session.
+		 *	Attempts to resume a user's session.
+		 *
+		 *	\param [in] $session_key
+		 *		The session key to attempt to
+		 *		resume.  May be \em null in
+		 *		which case the value (if any)
+		 *		the client sent as a cookie
+		 *		is used.
 		 *
 		 *	\return
-		 *		The User object representing the user
-		 *		associated with the current session,
-		 *		or \em null if there is no session, or
-		 *		if the session is invalid/expired.
+		 *		A LoginAttempt object representing
+		 *		the result of this login attempt.
 		 */
-		public static function Resume () {
+		public static function Resume ($session_key=null) {
 		
-			//	Database access
+			//	Get the session key, regardless
+			//	of where it's coming from
+			if (is_null($session_key)) {
+			
+				if (isset($_COOKIE[LOGIN_COOKIE])) {
+				
+					$session_key=$_COOKIE[LOGIN_COOKIE];
+				
+				} else {
+				
+					return new LoginAttempt(5);
+				
+				}
+			
+			}
+			
+			//	Get database access
 			global $dependencies;
-			$conn=$dependencies['MISADBConn'];
+			$conn=$dependencies[USER_DB];
 			
-			//	Is there a session at all?
-			if (!isset($_COOKIE[LOGIN_COOKIE])) return null;
-			
-			//	Attempt to grab the user
-			//	associated with this session
-			//	from the database
+			//	Attempt to retrieve user
+			//	associated with session key
 			$query=$conn->query(
 				sprintf(
 					'SELECT
 						`users`.*
 					FROM
-						`users`,
-						`sessions`
+						`sessions`,
+						`users`
 					WHERE
+						`sessions`.`user_id`=`users`.`id` AND
 						`sessions`.`key`=\'%s\' AND
-						`sessions`.`expires`>NOW() AND
-						`users`.`id`=`sessions`.`user_id`',
-					$conn->real_escape_string($_COOKIE[LOGIN_COOKIE])
+						`expires`>NOW()',
+					$conn->real_escape_string($session_key)
 				)
 			);
 			
 			//	Throw on error
 			if ($query===false) throw new Exception($conn->error);
 			
-			//	Fail if no row was returned
-			if ($query->num_rows===0) return null;
+			//	If there are now rows that
+			//	means the session is invalid
+			if ($query->num_rows===0) return new LoginAttempt(6);
 			
-			//	Update session information
+			//	Retrieve the user
+			$user=new User();
+			$user->user=new MySQLRow($query);
+			
+			//	Grab information about the user's
+			//	organization (if any)
+			$user->org=Organization::GetByID($user->user['org_id']->GetValue());
+			
+			//	Make sure user can login
+			if (!$user->Check($code)) return new LoginAttempt(
+				$code,
+				$user
+			);
+			
+			//	User is good, return success
+			return new LoginAttempt(0,$user);
+		
+		}
+		
+		
+		/**
+		 *	Attempts to destroy a user's session.
+		 *
+		 *	\param [in] $session_key
+		 *		The session key of the session
+		 *		which is to be destroyed.  May be
+		 *		\em null in which case the value
+		 *		(if any) the client sent as a
+		 *		cookie is used.  If \em null
+		 *		this function will unset the
+		 *		client's cookie as well.
+		 */
+		public static function Logout ($session_key=null) {
+		
+			//	If there's no session key
+			//	at all, do nothing
+			if (!(
+				isset($session_key) ||
+				isset($_COOKIE[LOGIN_COOKIE])
+			)) return;
+			
+			//	Destroy the session in the
+			//	database
+			global $dependencies;
+			$conn=$dependencies[USER_DB];
+			
 			if ($conn->query(
 				sprintf(
-					'UPDATE
+					'DELETE FROM
 						`sessions`
-					SET
-						`last`=NOW(),
-						`last_ip`=\'%s\'
 					WHERE
 						`key`=\'%s\'',
-					$conn->real_escape_string($_SERVER['REMOTE_ADDR']),
-					$conn->real_escape_string($_COOKIE[LOGIN_COOKIE])
+					$conn->real_escape_string(
+						isset($session_key)
+							?	$session_key
+							:	$_COOKIE[LOGIN_COOKIE]
+					)
 				)
 			)===false) throw new Exception($conn->error);
 			
-			//	Return user associated with session
-			return new User(new MySQLRow($query));
-		
-		}
-		
-		
-		/**
-		 *	Logs the currently logged in user out,
-		 *	destroying their session cookie and
-		 *	eliminating the session from the database.
-		 *
-		 *	If there is no active session, nothing
-		 *	happens.
-		 */
-		public static function Logout () {
-		
-			//	Database access
-			global $dependencies;
-			$conn=$dependencies['MISADBConn'];
-			
-			//	Is there a session?
-			//
-			//	Short-circuit out if not
-			if (!isset($_COOKIE[LOGIN_COOKIE])) return;
-			
-			//	Delete the session from the
-			//	database
-			if ($conn->query(
-				sprintf(
-					'DELETE FROM `sessions` WHERE `key`=\'%s\'',
-					$conn->real_escape_string($_COOKIE[LOGIN_COOKIE])
+			//	If the session key comes from
+			//	a cookie rather than from a
+			//	parameter, unset it
+			if (!(
+				isset($session_key) ||
+				setcookie(
+					LOGIN_COOKIE,
+					'',
+					1,
+					LOGIN_COOKIE_PATH,
+					LOGIN_COOKIE_DOMAIN,
+					LOGIN_COOKIE_HTTPS,
+					LOGIN_COOKIE_HTTP_ONLY
 				)
-			)===false) throw new Exception($conn->error);
-			
-			//	Destroy the user's cookie
-			if (!setcookie(
-				LOGIN_COOKIE,
-				'',
-				1,
-				LOGIN_COOKIE_PATH,
-				LOGIN_COOKIE_DOMAIN,
-				LOGIN_COOKIE_HTTPS,
-				LOGIN_COOKIE_HTTP_ONLY
-			)) throw new Exception('Could not delete cookie');
-		
-		}
-		
-		
-		/**
-		 *	Creates a new user object from
-		 *	a database row.
-		 *
-		 *	Should not be used directly, use
-		 *	the static factory methods instead.
-		 *
-		 *	\param [in] $row
-		 *		The database row representing
-		 *		the user-in-question.
-		 */
-		public function __construct ($row) {
-		
-			if (!($row instanceof MySQLRow)) throw new Exception('Type mismatch');
-		
-			$this->row=$row;
+			)) throw new Exception('Failed to unset cookie');
 		
 		}
 		
@@ -396,7 +632,7 @@
 			if (is_null($format)) return null;
 		
 			//	For capture by lambda
-			$row=$this->row;
+			$row=$this->user;
 		
 			return preg_replace_callback(
 				'/[FLfleEmUun]/u',
@@ -452,71 +688,112 @@
 				},
 				$format
 			);
+			
+			
+		}
+		
+		
+		/**
+		 *	Represents this object as an array.
+		 *
+		 *	\return
+		 *		An associative array which represents
+		 *		this object.
+		 */
+		public function ToArray () {
+		
+			$returnthis=array();
+			
+			$user=array();
+			
+			foreach ($this as $key=>$value) {
+			
+				$user[$key]=($value instanceof MySQLDatum) ? $value->GetValue() : $value;
+			
+			}
+			
+			$returnthis['user']=$user;
+			$returnthis['organization']=is_null($this->org) ? null : $this->org->ToArray();
+			$returnthis['session_key']=is_null($this->session_key) ? null : $this->session_key;
+			$returnthis['session_expiry']=is_null($this->session_expiry) ? null : $this->session_expiry->format('Y,m,d,H,i,s');
+			
+			return $returnthis;
 		
 		}
 		
 		
 		/**
-		 *	Checks to see if this user has a certain
-		 *	property associated with them.
-		 *
-		 *	Note that unlike the PHP built-in semantics,
-		 *	a property may exist but have a value of
-		 *	\em null.
-		 *
-		 *	\param [in] $offset
-		 *		The property whose existence shall be
-		 *		checked.
+		 *	Retrieves an iterator that can be used
+		 *	to iterate the properties of this user.
 		 *
 		 *	\return
-		 *		\em true if the property exists,
+		 *		An iterator which traverses this
+		 *		user.
+		 */
+		public function getIterator () {
+		
+			return $this->user->getIterator();
+		
+		}
+		
+		
+		/**
+		 *	Determines whether a given property of
+		 *	this user is set.
+		 *
+		 *	\param [in] $name
+		 *		The name of the property to check.
+		 *
+		 *	\return
+		 *		\em true if the property is set,
 		 *		\em false otherwise.
 		 */
-		public function offsetExists ($offset) {
+		public function __isset ($name) {
 		
-			return isset($this->row[$offset]);
+			switch ($name) {
+			
+				case 'organization':return isset($this->org);
+				case 'session_key':return isset($this->session_key);
+				case 'session_expiry':return isset($this->session_expiry);
+			
+			}
+			
+			return isset($user[$name]);
 		
 		}
 		
 		
 		/**
-		 *	Retrieves the value of a property.
+		 *	Retrieves a certain property of this
+		 *	user.
 		 *
-		 *	\param [in] $offset
-		 *		The property to retrieve.
+		 *	\param [in] $name
+		 *		The name of the property to retrieve.
 		 *
 		 *	\return
-		 *		The value of the property given by
-		 *		\em offset, or \em null if that
-		 *		property does not exist.
+		 *		The value of the requested property.
 		 */
-		public function offsetGet ($offset) {
+		public function __get ($name) {
 		
-			if (isset($this->row[$offset])) return $this->row[$offset]->GetValue();
+			switch ($name) {
+			
+				case 'organization':return $this->org;
+				case 'session_key':return $this->session_key;
+				case 'session_expiry':return $this->session_expiry;
+			
+			}
+			
+			if (isset($this->user[$name])) {
+			
+				return ($this->user[$name] instanceof MySQLDatum)
+					?	$this->user[$name]->GetValue()
+					:	$this->user[$name];
+				
+			}
 			
 			return null;
 		
 		}
-		
-		
-		/**
-		 *	Does nothing.
-		 *
-		 *	\param [in] $offset
-		 *		Ignored.
-		 *	\param [in] $value
-		 *		Ignored.
-		 */
-		public function offsetSet ($offset, $value) {	}
-		
-		
-		/**
-		 *	Does nothing.
-		 *
-		 *	\param [in] $offset
-		 *		Ignored.
-		 */
-		public function offsetUnset ($offset) {	}
 	
 	
 	}

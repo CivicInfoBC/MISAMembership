@@ -40,7 +40,7 @@ CREATE TABLE `membership_types` (
  */
 CREATE TABLE `organizations` (
 	`id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-	`org_name` varchar(255) NOT NULL,
+	`name` varchar(255) NOT NULL,
 	`address1` varchar(255) DEFAULT NULL,
 	--	Existing database does not have
 	--	this field nullable, but most

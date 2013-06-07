@@ -144,7 +144,7 @@
 	 *	Encapsulates a row and provides faculties
 	 *	for navigating an entire result set row-by-row.
 	 */
-	class MySQLRow implements arrayaccess {
+	class MySQLRow implements arrayaccess, IteratorAggregate {
 	
 	
 		private $query;
@@ -211,6 +211,35 @@
 				throw $e;
 			
 			}
+		
+		}
+		
+		
+		/**
+		 *	Retrieves the names of all columns in this
+		 *	row.
+		 *
+		 *	\return
+		 *		An enumerated array containing the names
+		 *		of all columns in this row.
+		 */
+		public function GetKeys () {
+		
+			return array_keys($this->data);
+		
+		}
+		
+		
+		/**
+		 *	Retrieves an iterator that allows this row
+		 *	to be traversed.
+		 *
+		 *	\return
+		 *		An iterator.
+		 */
+		public function getIterator () {
+		
+			return new MySQLRowIterator($this);
 		
 		}
 		
@@ -291,6 +320,71 @@
 	
 	
 	}
+	
+	
+	/**
+	 *	\cond
+	 */
+	 
+	 
+	class MySQLRowIterator implements Iterator {
+	
+	
+		private $row;
+		private $pos;
+		private $keys;
+		
+		
+		public function __construct ($row) {
+		
+			$this->row=$row;
+			$this->pos=0;
+			$this->keys=$row->GetKeys();
+		
+		}
+		
+		
+		public function rewind () {
+		
+			$this->pos=0;
+		
+		}
+		
+		
+		public function current () {
+		
+			return $this->row[$this->keys[$this->pos]];
+		
+		}
+		
+		
+		public function key () {
+		
+			return $this->keys[$this->pos];
+		
+		}
+		
+		
+		public function next () {
+		
+			++$this->pos;
+		
+		}
+		
+		
+		public function valid () {
+		
+			return isset($this->keys[$this->pos]) && isset($this->row[$this->keys[$this->pos]]);
+		
+		}
+	
+	
+	}
+	 
+	 
+	/**
+	 *	\endcond
+	 */
 
 
 ?>
