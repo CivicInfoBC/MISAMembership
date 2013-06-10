@@ -1,0 +1,95 @@
+<?php
+
+	global $request;
+	global $header;
+
+?><!doctype html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+
+	<head>
+	
+		<meta http-equiv="content-type" content="application/xhmtl+xml; charset=UTF-8" />
+		
+		<link rel="stylesheet" type="text/css" href="https://www.civicinfo.bc.ca/style/reset.css" />
+		<link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Open+Sans%3A300italic%2C400italic%2C400%2C300&ver=3.5.1" />
+		<link rel="stylesheet" type="text/css" href="<?php
+		
+			echo(
+				htmlspecialchars(
+					$request->MakeFileLink(
+						array(
+							WHERE_STYLESHEETS,
+							'main.css'
+						)
+					)
+				)
+			);
+		
+		?>" />
+		
+		<?php	foreach ($header as $x) echo($x);	?>
+	
+	</head>
+	
+	
+	<body>
+	
+		<div id="header" style="background-image: url(<?php
+		
+			mt_srand();
+			
+			$bgs=array(
+				'http://devel.misa.bc.ca/site-content/themes/misabc/images/random-headers/slide2.jpg',
+				'http://devel.misa.bc.ca/site-content/themes/misabc/images/random-headers/winter.png'
+			);
+			
+			if (count($bgs)!==0) echo($bgs[mt_rand(0,count($bgs)-1)]);
+		
+		?>);">
+		
+			<div id="banner">
+			
+				<a href=""><img src="http://devel.misa.bc.ca/site-content/themes/misabc/images/logo.png" /></a>
+				
+				<div>
+				
+					<a href="http://devel.misa.bc.ca/news/">News</a>
+					|
+					<a href="http://www.misa.bc.ca/">Newsletter</a>
+					|
+					<a href="http://www.misa.bc.ca/">Careers</a>
+					|
+					<a href="http://www.misa.bc.ca/">Contact Us</a>
+				
+				</div>
+			
+			</div>
+			
+			<div id="page_title">
+			
+				Municipal Information Systems Association of BC
+			
+			</div>
+		
+		</div>
+		
+		<div id="main">
+		
+			<?php	$this->template->Render($this->file);	?>
+		
+		</div>
+		
+		<div id="footer">
+		
+			<div>Copyright &copy; <?php	echo(htmlspecialchars(date('Y')));	?> MISA BC</div>
+			<div><a href="http://devel.misa.bc.ca/privacy-policy/">Privacy Policy</a></div>
+		
+		</div>
+	
+	</body>
+
+
+</html>

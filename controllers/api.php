@@ -3,10 +3,10 @@
 
 	//	All API requests must be POST
 	//	and must send JSON
-	if (
-		($_SERVER['REQUEST_METHOD']!=='POST') ||
-		($_SERVER['CONTENT_TYPE']!=='application/json')
-	) error(HTTP_BAD_REQUEST);
+	if (!(
+		($_SERVER['REQUEST_METHOD']==='POST') &&
+		($_SERVER['CONTENT_TYPE']==='application/json')
+	)) error(HTTP_BAD_REQUEST);
 	
 	//	Get JSON request
 	$api_request=json_decode(

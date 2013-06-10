@@ -1,6 +1,72 @@
 <?php
 
 
+
+	function Render ($inner_template, $file) {
+	
+		global $request;
+		
+		$template=new Template(WHERE_TEMPLATES);
+		
+		$template->template=$inner_template;
+		$template->file=$file;
+		
+		$template->Render('main.phtml');
+	
+	}
+	
+	
+	function AddStylesheet ($stylesheet, $media=null) {
+	
+		global $header;
+		global $request;
+		
+		$attributes=array(
+			'rel' => 'stylesheet',
+			'type' => 'text/css'
+		);
+		
+		$link=array(WHERE_STYLESHEETS);
+		
+		if (is_array($stylesheet)) array_merge($link,$stylesheet);
+		else $link[]=$stylesheet;
+		
+		$attributes['href']=$request->MakeFileLink($link);
+		
+		if (!is_null($media)) $attributes['media']=$media;
+		
+		$header[]=new HTMLElement(
+			'link',
+			$attributes
+		);
+	
+	}
+	
+	
+	function AddJavaScript ($script) {
+	
+		global $header;
+		global $request;
+		
+		$link=array(WHERE_JAVASCRIPT);
+		
+		if (is_array($script)) array_merge($link,$script);
+		else $link[]=$script;
+		
+		$element=new HTMLElement(
+			'script',
+			array(
+				'type' => 'text/javascript',
+				'src' => $request->MakeFileLink($link)
+			)
+		);
+		$element->ExplicitClose=true;
+		
+		$header[]=$element;
+	
+	}
+
+
 	//	Load configuration
 	require_once('./config.php');
 	
@@ -32,7 +98,7 @@
 	def('WHERE_JAVASCRIPT','./javascript/');
 	def('WHERE_STYLESHEETS','./styles/');
 	def('WHERE_IMAGES','./images/');
-	def('NO_LOGIN_CONTROLLER','login.php');	//	Users who aren't logged in can only login
+	def('LOGIN_CONTROLLER','login.php');	//	Users who aren't logged in can only login
 	def('DEFAULT_CONTROLLER','');	//	TDB
 	def('API_CONTROLLER','api.php');	//	Controller for API functions
 	def('API_ARG','api');	//	Handled during pre-routing so API calls don't get GUI login functionality
@@ -63,7 +129,7 @@
 	require_once(SITE_ROOT.'dependencies.php');						//	Definition of all dependencies
 	require_once(WHERE_PHP_INCLUDES.'utils.php');					//	Misc utilities
 	require_once(WHERE_PHP_INCLUDES.'html_element.php');			//	HTML element
-	require_once(WHERE_PHP_INCLUDES.'user.php');					//	User/login abstraction/encapsulation
+	require_once(WHERE_LOCAL_PHP_INCLUDES.'user.php');				//	User/login abstraction/encapsulation
 	
 	
 	//	Error handling
@@ -122,6 +188,65 @@
 		
 		//	Continue as normal
 		} else {
+		
+			//	We must check the user's logged in
+			//	status before deciding how to
+			//	proceed
+			
+			//	User is logging in
+			if (
+				($request->GetQueryString(LOGIN_KEY)===TRUE_STRING) &&
+				($_SERVER['REQUEST_METHOD']==='POST') &&
+				isset($_POST) &&
+				isset($_POST[PASSWORD_KEY]) &&
+				isset($_POST[USERNAME_KEY])
+			) {
+			
+				$user=User::Login(
+					$_POST[USERNAME_KEY],
+					$_POST[PASSWORD_KEY]
+				);
+				
+				//	Login failed
+				if (is_null($user->user)) {
+				
+					$login_message=$user->reason;
+					
+					//	No logged in user
+					$user=null;
+				
+				} else {
+				
+					$user=$user->user;
+				
+				}
+			
+			//	User is logging out
+			} else if ($request->GetQueryString(LOGOUT_KEY)===TRUE_STRING) {
+			
+				$user=null;
+				
+				User::Logout();
+			
+			//	Attempt to regenerate a session
+			} else {
+			
+				$user=User::Resume()->user;
+			
+			}
+			
+			//	Force login if user is not
+			//	logged in
+			if (is_null($user)) {
+			
+				require(WHERE_CONTROLLERS.LOGIN_CONTROLLER);
+			
+			//	Otherwise we may proceed with routing
+			} else {
+			
+				
+			
+			}
 		
 		}
 		

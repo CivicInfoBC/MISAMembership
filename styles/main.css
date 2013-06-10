@@ -1,0 +1,172 @@
+@charset "UTF-8";
+
+
+/*	CUSTOM FONTS	*/
+
+
+@font-face {
+    font-family: 'source_sans_proregular';
+    src: url(http://devel.misa.bc.ca/site-content/themes/misabc/fonts/sourcesanspro-regular-webfont.eot);
+    src: url(http://devel.misa.bc.ca/site-content/themes/misabc/fonts/sourcesanspro-regular-webfont.eot?#iefix) format('embedded-opentype'),
+         url(http://devel.misa.bc.ca/site-content/themes/misabc/fonts/sourcesanspro-regular-webfont.woff) format('woff'),
+         url(http://devel.misa.bc.ca/site-content/themes/misabc/fonts/sourcesanspro-regular-webfont.ttf) format('truetype'),
+         url(http://devel.misa.bc.ca/site-content/themes/misabc/fonts/sourcesanspro-regular-webfont.svg#source_sans_proregular) format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'source_sans_prolight';
+    src: url(http://devel.misa.bc.ca/site-content/themes/misabc/fonts/sourcesanspro-light-webfont.eot);
+    src: url(http://devel.misa.bc.ca/site-content/themes/misabc/fonts/sourcesanspro-light-webfont.eot?#iefix) format('embedded-opentype'),
+         url(http://devel.misa.bc.ca/site-content/themes/misabc/fonts/sourcesanspro-light-webfont.woff) format('woff'),
+         url(http://devel.misa.bc.ca/site-content/themes/misabc/fonts/sourcesanspro-light-webfont.ttf) format('truetype'),
+         url(http://devel.misa.bc.ca/site-content/themes/misabc/fonts/sourcesanspro-light-webfont.svg#source_sans_prolight) format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+
+
+/*	BODY	*/
+
+
+body {
+
+	font-family: "source_sans_proregular", "Helvetica Neue", "Helvetica", Helvetica, Arial, sans-serif;
+
+}
+
+
+/*	UNIFORM WIDTH	*/
+
+
+#banner, #page_title, #main, #footer > * {
+
+	width: 960px;
+	margin-left: auto;
+	margin-right: auto;
+
+}
+
+
+/*	HEADER	*/
+
+
+#header {
+
+	background-color: #65728A;
+	background-repeat: no-repeat;
+	background-position: center;
+	height: 395px;
+
+}
+
+
+#banner {
+
+	height: 90px;
+	color: white;
+	font-size: 8pt;
+	text-transform: uppercase;
+	background-color: #2B3549;
+
+}
+
+
+#banner img {
+
+	margin-left: 15px;
+	margin-top: 30px;
+	margin-right: 15px;
+
+}
+
+
+#banner div {
+
+	display: inline;
+	margin-top: 35px;
+
+}
+
+
+#banner a {
+
+	text-decoration: inherit;
+	color: inherit;
+	padding-left: 5px;
+	padding-right: 5px;
+
+}
+
+
+#page_title {
+
+	height: 255px;
+	line-height: 255px;
+	vertical-align: middle;
+	box-sizing: border-box;
+	padding-left: 15px;
+	font-size: 19pt;
+	color: #BFCBE6;
+
+}
+
+
+/*	MAIN CONTENT	*/
+
+
+#main {
+
+	margin-top: 35px;
+
+}
+
+
+#main > * {
+
+	margin-bottom: 20px;
+
+}
+
+
+/*	FOOTER	*/
+
+
+#footer {
+
+	margin-top: 40px;
+	padding-top: 89px;
+	padding-bottom: 10px;
+	background-image: url(http://devel.misa.bc.ca/site-content/themes/misabc/images/diagonal_small.png);
+	background-repeat: repeat-x;
+	text-align: center;
+	font-size: 14px;
+
+}
+
+
+#footer > *:nth-child(2) {
+
+	margin-top: 5px;
+	font-size: 8pt;
+
+}
+
+
+#footer a {
+
+	color: inherit;
+
+}
+
+
+/*	MISC	*/
+
+
+h1 {
+
+	font-size: 26px;
+	font-weight: 400;
+
+}
