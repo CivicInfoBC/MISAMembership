@@ -279,17 +279,13 @@
 			
 			if (!is_null($this->leading_arg)) $link.=rawurlencode($this->leading_arg).'/';
 			
-			if (!is_null($controller)) {
+			if (!is_null($controller)) $link.=rawurlencode($controller).'/';
 			
-				$link.=rawurlencode($controller).'/';
+			if (!is_null($args)) {
 				
-				if (!is_null($args)) {
+				if (!is_array($args)) $args=array($args);
 				
-					if (!is_array($args)) $args=array($args);
-					
-					foreach ($args as $x) $link.=rawurlencode(mb_ereg_replace('\.{0,2}/','',$x)).'/';
-				
-				}
+				foreach ($args as $x) $link.=rawurlencode(mb_ereg_replace('\.{0,2}/','',$x)).'/';
 				
 			}
 			
@@ -381,6 +377,29 @@
 				empty($_SERVER['HTTPS']) ||
 				($_SERVER['HTTPS']==='off')
 			);
+		
+		}
+		
+		
+		/**
+		 *	Informs the Request object that it should
+		 *	treat this request as having no controller.
+		 */
+		public function NoController () {
+		
+			if (!is_null($this->controller)) {
+			
+				//	Add the controller to the
+				//	args
+				array_unshift(
+					$this->args,
+					$this->controller
+				);
+				
+				//	Null out the controller
+				$this->controller=null;
+			
+			}
 		
 		}
 	

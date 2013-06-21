@@ -136,11 +136,91 @@
 		private $session_expiry;
 		
 		
-		private function __construct () {
+		/**
+		 *	Hashes a password for insertion into
+		 *	the database.
+		 *
+		 *	\param [in] $password
+		 *		The plaintext password.
+		 *
+		 *	\return
+		 *		A hash of that password.
+		 */
+		public static function PasswordHash ($password) {
 		
-			$this->user=null;
+			$bcrypt=new Bcrypt(BCRYPT_ROUNDS);
+			
+			return $bcrypt->hash($password);
+		
+		}
+		
+		
+		/**
+		 *	Creates a new user object.
+		 *
+		 *	\param [in] $user
+		 *		A MySQLRow or array to wrap.
+		 */
+		public function __construct ($user=null) {
+		
+			if (!is_null($user)) {
+			
+				if (!(
+					($user instanceof MySQLRow) ||
+					is_array($user)
+				)) throw new Exception('Type mismatch');
+			
+			}
+		
+			$this->user=$user;
 			$this->org=null;
 			$this->session_key=null;
+		
+		}
+		
+		
+		/**
+		 *	Saves this user's data to the database.
+		 */
+		public function Save () {
+		
+			//	Get database access
+			global $dependencies;
+			$conn=$dependencies[USER_DB];
+		
+			//	Generate SET clause
+			$set_clause='';
+		
+			foreach ($this->user as $field=>$value) {
+			
+				if ($field!=='id') {
+				
+					if ($set_clause!=='') $set_clause.=',';
+					
+					$set_clause.=sprintf(
+						'`%s`=%s',
+						preg_replace('/`/u','``',$field),
+						is_null($value)
+							?	'NULL'
+							:	'\''.$conn->real_escape_string($value).'\''
+					);
+					
+				}
+				
+			}
+			
+			//	If there's no ID, bail out
+			if (!isset($this->user['id'])) throw new Exception('No ID');
+			
+			//	Perform query against
+			//	the database
+			if ($conn->query(
+				sprintf(
+					'UPDATE `users` SET %s WHERE `id`=\'%s\'',
+					$set_clause,
+					$conn->real_escape_string($this->user['id'])
+				)
+			)===false) throw new Exception($conn->error);
 		
 		}
 		
@@ -209,6 +289,64 @@
 			$code=2;
 			
 			return false;
+		
+		}
+		
+		
+		/**
+		 *	Retrieves the user object from the database
+		 *	that corresponds to a given user ID.
+		 *
+		 *	\param [in] $id
+		 *		The ID of the user to retrieve.
+		 *
+		 *	\return
+		 *		A user object representing the user
+		 *		with \em id, or \em null if the user
+		 *		could not be found.
+		 */
+		public static function GetByID ($id) {
+		
+			//	Guard against nulls
+			if (is_null($id)) return null;
+			
+			//	Database access
+			global $dependencies;
+			$conn=$dependencies[USER_DB];
+			
+			//	Grab the user from the database
+			$query=$conn->query(
+				sprintf(
+					'SELECT
+						*
+					FROM
+						`users`
+					WHERE
+						`id`=\'%s\'',
+					$conn->real_escape_string($id)
+				)
+			);
+			
+			//	Throw on error
+			if ($query===false) throw new Exception($conn->error);
+			
+			//	If there are no rows,
+			//	user doesn't exist
+			if ($query->num_rows===0) return null;
+			
+			//	Grab the row
+			$row=new MySQLRow($query);
+			
+			//	Create the object we'll return
+			$user=new User();
+			$user->user=$row;
+			
+			//	Grab the corresponding organization's
+			//	information
+			$user->org=Organization::GetByID($row['org_id']->GetValue());
+			
+			//	Return
+			return $user;
 		
 		}
 		
@@ -758,7 +896,15 @@
 			
 			}
 			
-			return isset($user[$name]);
+			if ($this->user instanceof MySQLRow) {
+			
+				return !(is_null($this->user[$name]) || is_null($this->user[$name]));
+			
+			} else {
+			
+				return isset($this->user[$name]);
+			
+			}
 		
 		}
 		

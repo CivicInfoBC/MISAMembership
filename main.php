@@ -244,7 +244,20 @@
 			//	Otherwise we may proceed with routing
 			} else {
 			
+				if (
+					is_null($request->GetController()) ||
+					!isset($routes[$request->GetController()])
+				) {
 				
+					$request->NoController();
+					
+					require(WHERE_CONTROLLERS.$fallback_route);
+				
+				} else {
+				
+					require(WHERE_CONTROLLERS.$routes[$request->GetController()]);
+				
+				}
 			
 			}
 		
@@ -252,6 +265,8 @@
 		
 		
 	} catch (Exception $e) {
+	
+		var_dump($e);
 	
 		if (DEBUG) error(HTTP_INTERNAL_SERVER_ERROR,$e->message);
 		else error(HTTP_INTERNAL_SERVER_ERROR);

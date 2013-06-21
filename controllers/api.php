@@ -1,12 +1,39 @@
 <?php
 
 
+	//	Special error handling function
+	//	for API functions that doesn't have
+	//	the GUI that goes along with the
+	//	regular error function
+	function api_error ($errno) {
+	
+		if (is_integer($errno)) {
+		
+			global $http_error_code_map;
+			
+			$http_header='HTTP/1.1 '.$errno;
+			
+			if (
+				isset($http_error_code_map[$errno]) &&
+				isset($http_error_code_map[$errno]['title'])
+			) $http_header.=' '.$http_error_code_map[$errno]['title'];
+		
+			header($http_header);
+		
+		}
+		
+		//	Die
+		exit();
+	
+	}
+
+
 	//	All API requests must be POST
 	//	and must send JSON
 	if (!(
 		($_SERVER['REQUEST_METHOD']==='POST') &&
 		($_SERVER['CONTENT_TYPE']==='application/json')
-	)) error(HTTP_BAD_REQUEST);
+	)) api_error(HTTP_BAD_REQUEST);
 	
 	//	Get JSON request
 	$api_request=json_decode(
@@ -48,7 +75,7 @@
 				true
 			)
 		)
-	) error(HTTP_BAD_REQUEST);
+	) api_error(HTTP_BAD_REQUEST);
 	
 	//	Check to ensure this API key is
 	//	authorized
@@ -72,7 +99,7 @@
 	//	If there are no matching rows,
 	//	the API key doesn't exist and therefore
 	//	the consumer is not authorized
-	if ($query->num_rows===0) error(HTTP_FORBIDDEN);
+	if ($query->num_rows===0) api_error(HTTP_FORBIDDEN);
 	
 	//	Consumer is authorized, load
 	//	and store data

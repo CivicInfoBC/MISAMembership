@@ -73,7 +73,7 @@
 		//	Login
 		
 		//	Check shared field
-		if (!isset($api_request->real_ip)) error(HTTP_BAD_REQUEST);
+		if (!isset($api_request->real_ip)) api_error(HTTP_BAD_REQUEST);
 		
 		//	Check individual fields
 		//	and decide how to handle
@@ -103,7 +103,7 @@
 		//	ERROR
 		} else {
 		
-			error(HTTP_BAD_REQUEST);
+			api_error(HTTP_BAD_REQUEST);
 		
 		}
 		
@@ -120,7 +120,7 @@
 	//	ERROR
 	} else {
 	
-		error(HTTP_BAD_REQUEST);
+		api_error(HTTP_BAD_REQUEST);
 	
 	}
 
