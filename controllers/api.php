@@ -7,6 +7,8 @@
 	//	regular error function
 	function api_error ($errno, $msg=null) {
 	
+		header('Content-Type:application/json');
+	
 		if (is_integer($errno)) {
 		
 			global $http_error_code_map;

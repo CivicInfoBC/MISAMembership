@@ -97,7 +97,8 @@
 		
 			//	Perform session regeneration
 			$api_result=User::Resume(
-				$api_request->session_key
+				$api_request->session_key,
+				$api_result->real_ip
 			);
 		
 		//	ERROR

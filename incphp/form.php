@@ -723,6 +723,7 @@
 			'NT' => 'Canada - Northwest Territories',
 			'NS' => 'Canada - Nova Scotia',
 			'NU' => 'Canada - Nunavut',
+			'ON' => 'Canada - Ontario',
 			'PE' => 'Canada - Prince Edward Island',
 			'QC' => 'Canada - Quebec',
 			'SK' => 'Canada - Saskatchewan',

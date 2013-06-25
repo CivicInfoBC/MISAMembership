@@ -40,7 +40,7 @@
 	  private function getRandomBytes($count) {
 		$bytes = '';
 
-		/*if(function_exists('openssl_random_pseudo_bytes') &&
+		if(function_exists('openssl_random_pseudo_bytes') &&
 			(strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN')) { // OpenSSL slow on Win
 		  $bytes = openssl_random_pseudo_bytes($count);
 		}
@@ -49,7 +49,7 @@
 		   ($hRand = @fopen('/dev/urandom', 'rb')) !== FALSE) {
 		  $bytes = fread($hRand, $count);
 		  fclose($hRand);
-		}*/
+		}
 
 		if(strlen($bytes) < $count) {
 		  $bytes = '';

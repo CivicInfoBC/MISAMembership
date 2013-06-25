@@ -619,12 +619,19 @@
 		 *		which case the value (if any)
 		 *		the client sent as a cookie
 		 *		is used.
+		 *	\param [in] $real_ip
+		 *		The real IP the user is logging in
+		 *		from, to be used if the user is
+		 *		being logged in by a remote server
+		 *		through the API.  This is to be set
+		 *		to the actual IP of the client.
+		 *		Defaults to \em null.
 		 *
 		 *	\return
 		 *		A LoginAttempt object representing
 		 *		the result of this login attempt.
 		 */
-		public static function Resume ($session_key=null) {
+		public static function Resume ($session_key=null, $real_ip=null) {
 		
 			//	Get the session key, regardless
 			//	of where it's coming from
@@ -683,6 +690,27 @@
 				$code,
 				$user
 			);
+			
+			//	Update last login time
+			$query=$conn->query(
+				sprintf(
+					'UPDATE
+						`sessions`
+					SET
+						`last_ip`=\'%s\',
+						`last`=NOW()
+					WHERE
+						`key`=\'%s\'',
+					$conn->real_escape_string(
+						is_null($real_ip)
+							?	$_SERVER['REMOTE_ADDR']
+							:	$real_ip
+					),
+					$conn->real_escape_string($session_key)
+				)
+			);
+			
+			if ($query===false) throw new Exception($conn->error);
 			
 			//	User is good, return success
 			return new LoginAttempt(0,$user);
