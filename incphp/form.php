@@ -87,7 +87,9 @@
 		 *	the client side.
 		 *
 		 *	\return
-		 *		A string containing JavaScript.
+		 *		A string containing JavaScript, or
+		 *		\em null if no JavaScript verification
+		 *		is appropriate.
 		 */
 		abstract public function RenderVerify ();
 		
@@ -358,7 +360,7 @@
 		 *		and shall be in a format acceptable
 		 *		for JavaScript.
 		 */
-		public static $verify_template='';
+		public static $verify_template='if (!document.getElementsByTagName(\'form\')[0].elements[%2$s].value.match(%1$s)){ErrorElement(document.getElementsByTagName(\'form\')[0].elements[%2$s]);verified=false;}else{UnerrorElement(document.getElementsByTagName(\'form\')[0].elements[%2$s]);}';
 		
 		
 		/**
@@ -431,7 +433,7 @@
 						?	self::$verify_template
 						:	static::$verify_template
 				),
-				'/'.$this->regex.'/',
+				(is_null($this->regex) || ($this->regex==='')) ? '/(?:)/' : '/'.$this->regex.'/',
 				json_encode($this->key)
 			);
 		
@@ -466,7 +468,7 @@
 		 *	4.	The type of this input tag.
 		 */
 		public static $template='<div><div>%s:</div><div><input name="%s" value="%s" type="%s" /></div></div>';
-		public static $verify_template=null;
+		public static $verify_template='';
 		
 		
 		/**
@@ -792,6 +794,7 @@
 		 *	be selected when the object has no value.
 		 */
 		public static $default='BC';
+		public static $verify_template='if ((document.getElementsByTagName(\'form\')[0].elements[%2$s].options[document.getElementsByTagName(\'form\')[0].elements[%2$s].selectedIndex].value===\'\') &&!document.getElementsByTagName(\'form\')[0].elements[%3$s].value.match(%1$s)){ErrorElement(document.getElementsByTagName(\'form\')[0].elements[%2$s]);verified=false;}else{UnerrorElement(document.getElementsByTagName(\'form\')[0].elements[%2$s]);}';
 		
 		
 		/**
@@ -844,33 +847,49 @@
 			
 			}
 			
-			//	This flag gets set if the currently-selected
-			//	option represents a value in the drop-down
 			$is_dropdown=false;
+			
+			//	Scan the drop-down elements to see
+			//	if not-"Other" is selected
+			foreach (self::$options as $value=>$label) {
+			
+				if (
+					MBString::Compare($value,$this->value) ||
+					MBString::Compare($label,$this->value)
+				) {
+				
+					$is_dropdown=true;
+				
+				}
+			
+			}
 			
 			//	A string containing the HTML
 			//	for the options tags that go
-			//	in the select tag.
+			//	in the select tag
 			$options='';
 			
 			//	Loop and create HTML for options
 			foreach (self::$options as $value=>$label) {
 			
-				//	Is this the currently selected
+				//	Is this the currently-selected
 				//	option?
-				$is_this=MBString::Compare(
-					$value,
-					$this->value
+				
+				$is_this=(
+					//	If this is "Other" and the selected
+					//	option is not in the drop-down,
+					//	this is the selected option
+					($value==='')
+						?	!$is_dropdown
+							//	Otherwise only if there's
+							//	a match is this selected
+						:	(
+								MBString::Compare($value,$this->value) ||
+								MBString::Compare($label,$this->value)
+							)
 				);
 				
-				//	If this option is the selected
-				//	option, then the option is a
-				//	drop-down option.
-				//
-				//	Communicate this.
-				$is_dropdown=true;
-				
-				//	Render
+				//	Create HTML
 				$options.=sprintf(
 					self::$drop_down_template,
 					htmlspecialchars($value),
@@ -913,7 +932,7 @@
 			
 			$this->value=(
 				//	Prefer the drop-down
-				isset($arr[$this->key])
+				(isset($arr[$this->key]) && ($arr[$this->key]!==''))
 					?	$arr[$this->key]
 					:	(
 							//	Fallback to the text element
@@ -940,11 +959,29 @@
 			return parent::Verify();
 		
 		}
+		
+		
+		public function RenderVerify () {
+		
+			return sprintf(
+				self::$verify_template,
+				(is_null($this->regex) || ($this->regex==='')) ? '/(?:)/' : '/'.$this->regex.'/',
+				json_encode($this->key),
+				json_encode($this->key.'_other')
+			);
+		
+		}
 	
 	
 	}
 	
 	
+	/**
+	 *	A form element which encapsulates two logical
+	 *	form elements: A password input box to enter
+	 *	a new password, and a second input box which
+	 *	must contain exactly the same password.
+	 */
 	class ChangePasswordFormElement extends DataFormElement {
 	
 
@@ -971,8 +1008,10 @@
 		 *
 		 *	1.	The key for this element in a format acceptable
 		 *		for a JavaScript string.
+		 *	2.	The key for the second (confirm) element in
+		 *		a format acceptable for a JavaScript string.
 		 */
-		public static $verify_template='';
+		public static $verify_template='if (document.getElementsByTagName(\'form\')[0].elements[%1$s].value!==document.getElementsByTagName(\'form\')[0].elements[%2$s].value){ErrorElement(document.getElementsByTagName(\'form\')[0].elements[%1$s]);ErrorElement(document.getElementsByTagName(\'form\')[0].elements[%2$s]);verified=false;}else{UnerrorElement(document.getElementsByTagName(\'form\')[0].elements[%1$s]);UnerrorElement(document.getElementsByTagName(\'form\')[0].elements[%2$s]);}';
 		
 
 		private $confirm_value;
@@ -990,6 +1029,9 @@
 		 *
 		 *	\param [in] $key
 		 *		The key that shall be associated
+		 *		with this element.
+		 *	\param [in] $label
+		 *		The text label that shall be associated
 		 *		with this element.
 		 */
 		public function __construct ($key, $label) {
@@ -1051,7 +1093,8 @@
 		
 			return sprintf(
 				self::$verify_template,
-				json_encode($this->key)
+				json_encode($this->key),
+				json_encode($this->key.'_confirm')
 			);
 		
 		}
@@ -1063,6 +1106,304 @@
 				self::$template,
 				htmlspecialchars($this->label),
 				htmlspecialchars($this->key)
+			);
+		
+		}
+	
+	
+	}
+	
+	
+	/**
+	 *	A drop-down which may be populated either
+	 *	from an array, an associative, array,
+	 *	or from the database.
+	 */
+	class DropDownFormElement extends DataFormElement {
+	
+	
+		public static $options_template='<option value="%1$s" %3$s>%2$s</option>';
+		/**
+		 *	The template that shall be used to render
+		 *	HTML for this form element.
+		 *
+		 *	Shall be in the format expected for sprintf,
+		 *	with the following substitutions to be
+		 *	made:
+		 *
+		 *	1.	The label associated with this element.
+		 *	2.	The key associated with this element.
+		 *	3.	The option tags that represent the options
+		 *		this element presents.
+		 */
+		public static $template='<div><div>%s:</div><div><select name="%s">%s</select></div></div>';
+	
+		
+		private $arr;
+		private $label;
+		
+		
+		/**
+		 *	Creates a new drop-down and populates
+		 *	it with data.
+		 *
+		 *	May be populated either from a database
+		 *	query or from an array.
+		 *
+		 *	The behaviour is as follows:
+		 *
+		 *	<B>Database:</B>
+		 *
+		 *	The form element shall use \em conn_or_arr
+		 *	as a MySQLi database connection and shall
+		 *	execute \em query.
+		 *
+		 *	The first column of the resultant data set
+		 *	shall be used as the keys for the drop-down
+		 *	items, the second column shall be used
+		 *	as the labels.
+		 *
+		 *	If the data set has only one column, it shall
+		 *	be used as both the keys and labels.
+		 *
+		 *	<B>Array:</B>
+		 *
+		 *	If an associative array is passed, the key
+		 *	shall become the key, and the value shall
+		 *	become the label of the resulting drop-down.
+		 *
+		 *	If an enumerated array is passed, the index
+		 *	shall become the key, and the value shall
+		 *	become the label.
+		 *
+		 *	In all cases the drop-down shall be populated
+		 *	in the order in which data is returned.
+		 *
+		 *	\param [in] $key
+		 *		The key that shall be associated
+		 *		with this element.
+		 *	\param [in] $value
+		 *		The initial value of this element.
+		 *	\param [in] $label
+		 *		The text label that shall be associated
+		 *		with this element.
+		 *	\param [in] $conn_or_arr
+		 *		A valid MySQLi database connection,
+		 *		if \em query is not null, otherwise
+		 *		an array which shall be used to
+		 *		populate the drop-down.
+		 *	\param [in] $empty
+		 *		Whether no value makes sense for this
+		 *		drop-down.  Ignored if not being
+		 *		populated from a database query.
+		 *	\param [in] $query
+		 *		Must be provided if \em conn_or_arr
+		 *		is a database connection.  The
+		 *		query to execute to populate the
+		 *		drop-down.
+		 */
+		public function __construct ($key, $value, $label, $conn_or_arr, $empty=null, $query=null) {
+		
+			parent::__construct($key,$value);
+		
+			$this->arr=array();
+			
+			if (is_array($conn_or_arr)) {
+			
+				//	Ignore fourth parameter,
+				//	populate from array
+				
+				foreach ($conn_or_arr as $key=>$label) $this->arr[$key]=$label;
+			
+			} else {
+			
+				//	Throw if the fourth parameter is
+				//	not set
+				if (!isset($query)) throw new Exception('$query cannot be null');
+				
+				//	Perform query
+				$query=$conn_or_arr->query($query);
+				
+				if ($query===false) throw new Exception($conn_or_arr->error);
+				
+				if ($empty) $this->arr['']='';
+				
+				if ($query->num_rows!==0) {
+				
+					//	Loop over result set
+					for ($row=new MySQLRow($query);!is_null($row);$row=$row->Next()) {
+					
+						if (!isset($row[0])) throw new Exception('Query returned invalid results');
+						
+						$this->arr[(string)$row[0]]=(string)$row[isset($row[1]) ? 1 : 0];
+					
+					}
+				
+				}
+			
+			}
+			
+			$this->label=$label;
+		
+		}
+		
+		
+		public function Verify () {
+		
+			if (is_numeric($this->value)) $this->value=intval($this->value);
+		
+			return in_array($this->value,array_keys($this->arr),true);
+		
+		}
+		
+		
+		public function Render () {
+		
+			$options='';
+		
+			//	Loop and generate the <option>
+			//	tag for each element
+			foreach ($this->arr as $value=>$label) {
+			
+				$options.=sprintf(
+					self::$options_template,
+					htmlspecialchars($value),
+					htmlspecialchars($label),
+					($value===$this->value) ?	'selected' : ''
+				);
+			
+			}
+			
+			//	Return output
+			return sprintf(
+				self::$template,
+				htmlspecialchars($this->label),
+				htmlspecialchars($this->key),
+				$options
+			);
+		
+		}
+		
+		
+		public function RenderVerify () {
+		
+			//	No JavaScript verification code.
+			//
+			//	If the user is exploiting so they
+			//	can send values not in the drop-down,
+			//	we don't care if they get ugly
+			//	back-end error messages.
+			return null;
+		
+		}
+		
+	
+	}
+	
+	
+	class CheckBoxFormElement extends DataFormElement {
+	
+	
+		/**
+		 *	The template which CheckBoxFormElement
+		 *	objects shall use to render their HTML.
+		 *
+		 *	Shall be in the format expected for sprintf,
+		 *	with the following substitutions to be
+		 *	made.
+		 *
+		 *	1.	The label associated with this element.
+		 *	2.	The key associated with this element.
+		 *	3.	\"Checked\" if the checkbox starts out
+		 *		checked, the empty string otherwise.
+		 */
+		public static $template='<div><div>%s:</div><div><input type="checkbox" value="true" name="%s" %s /></div></div>';
+	
+	
+		private $label;
+		
+		
+		/**
+		 *	Creates a new CheckBoxFormElement.
+		 *
+		 *	\param [in] $key
+		 *		The key that will be associated with
+		 *		the element.
+		 *	\param [in] $value
+		 *		The value that will be associated with
+		 *		the element.  Will be converted to a
+		 *		boolean.
+		 *	\param [in] $label
+		 *		The text label that will be associated
+		 *		with the element.
+		 */
+		public function __construct ($key, $value, $label) {
+		
+			parent::__construct(
+				$key,
+				$value ? true : false	//	Convert to a boolean
+			);
+		
+			$this->label=$label;
+		
+		}
+		
+		
+		public function Verify () {
+		
+			//	If the value is already a boolean,
+			//	it checks out
+			if (($this->value===true) || ($this->value===false)) return true;
+			
+			//	If it's exactly equal to the empty
+			//	string, convert it to false and
+			//	it's fine.
+			if ($this->value==='') {
+			
+				$this->value=false;
+				
+				return true;
+			
+			}
+			
+			//	If it's exactly equal to "true",
+			//	convert it to true and it's
+			//	fine.
+			if ($this->value==='true') {
+			
+				$this->value=true;
+				
+				return true;
+			
+			}
+			
+			//	Otherwise it's not a valid input
+			//	so we fail.
+			return false;
+		
+		}
+		
+		
+		public function RenderVerify () {
+		
+			//	No JavaScript verification code.
+			//
+			//	If the user is exploiting so they
+			//	can send values not in the drop-down,
+			//	we don't care if they get ugly
+			//	back-end error messages.
+			return null;
+		
+		}
+		
+		
+		public function Render () {
+		
+			return sprintf(
+				self::$template,
+				htmlspecialchars($this->label),
+				htmlspecialchars($this->key),
+				$this->value ? 'checked' : ''
 			);
 		
 		}

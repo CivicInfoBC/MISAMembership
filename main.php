@@ -207,17 +207,17 @@
 					$_POST[PASSWORD_KEY]
 				);
 				
-				//	Login failed
-				if (is_null($user->user)) {
+				if ($user->code===0) {
 				
-					$login_message=$user->reason;
-					
-					//	No logged in user
-					$user=null;
+					//	Login success
+					$user=$user->user;
 				
 				} else {
 				
-					$user=$user->user;
+					//	Login failure
+					$login_message=$user->reason;
+					
+					$user=null;
 				
 				}
 			
@@ -231,7 +231,23 @@
 			//	Attempt to regenerate a session
 			} else {
 			
-				$user=User::Resume()->user;
+				$user=User::Resume();
+				
+				if ($user->code===0) {
+				
+					//	Login success
+					$user=$user->user;
+				
+				} else {
+				
+					//	Login failure
+					//
+					//	Session-based logins fail
+					//	silently to avoid poor
+					//	user experience
+					$user=null;
+				
+				}
 			
 			}
 			
@@ -265,8 +281,6 @@
 		
 		
 	} catch (Exception $e) {
-	
-		var_dump($e);
 	
 		if (DEBUG) error(HTTP_INTERNAL_SERVER_ERROR,$e->message);
 		else error(HTTP_INTERNAL_SERVER_ERROR);

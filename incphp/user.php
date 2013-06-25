@@ -15,7 +15,7 @@
 	def('USER_DB','MISADBConn');
 	//	Number of rounds to use in bcrypt hashing
 	//	of passwords
-	def('BCRYPT_ROUNDS',15);
+	def('BCRYPT_ROUNDS',12);
 	//	The name of the cookie to use to store
 	//	the login session secret
 	def('LOGIN_COOKIE','misa_login_secret');
@@ -196,6 +196,8 @@
 				if ($field!=='id') {
 				
 					if ($set_clause!=='') $set_clause.=',';
+					
+					if (is_bool($value)) $value=$value ? 1 : 0;
 					
 					$set_clause.=sprintf(
 						'`%s`=%s',
@@ -560,28 +562,50 @@
 			
 			//	If $remember_me is null, bypass setting
 			//	cookie
-			if (!is_null($remember_me)) {
-			
-				//	If $remember_me is false, cookie
-				//	expires when user closes browser
-				if (!$remember_me) $expiry=0;
-				
-				//	Send the cookie
-				if (!setcookie(
-					LOGIN_COOKIE,
-					$user->session_key,
-					$expiry,
-					LOGIN_COOKIE_PATH,
-					LOGIN_COOKIE_DOMAIN,
-					LOGIN_COOKIE_HTTPS,
-					LOGIN_COOKIE_HTTP_ONLY
-				)) throw new Exception('Could not set cookie');
-			
-			}
+			if (!is_null($remember_me)) self::SetCookie($user->session_key,$remember_me);
 			
 			//	Return the user object and signal
 			//	login success
 			return new LoginAttempt(0,$user);
+		
+		}
+		
+		
+		/**
+		 *	Sends the user a session key.
+		 *
+		 *	\param [in] $session_key
+		 *		The session key to set as a cookie
+		 *		in the user's browser.
+		 *	\param [in] $remember_me
+		 *		Whether the user's login should be
+		 *		remember past the end of this browsing
+		 *		session.  Defaults to \em true.
+		 */
+		public static function SetCookie ($session_key, $remember_me=true) {
+		
+			//	Deduce the time at which the session
+			//	key we just generated ought to
+			//	expire
+			$expiry=intval(time()+LOGIN_COOKIE_EXPIRY);
+			//	Detect overflow and correct as best
+			//	possible
+			if ($expiry<0) $expiry=PHP_INT_MAX;
+		
+			//	If $remember_me is false, cookie
+			//	expires when user closes browser
+			if (!$remember_me) $expiry=0;
+			
+			//	Send the cookie
+			if (!setcookie(
+				LOGIN_COOKIE,
+				$session_key,
+				$expiry,
+				LOGIN_COOKIE_PATH,
+				LOGIN_COOKIE_DOMAIN,
+				LOGIN_COOKIE_HTTPS,
+				LOGIN_COOKIE_HTTP_ONLY
+			)) throw new Exception('Could not set cookie');
 		
 		}
 		

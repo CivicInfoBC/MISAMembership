@@ -76,7 +76,9 @@
 		($user->org->id===$curr_user->org->id)
 	) {
 	
-		$read_only=false;
+		//	Unless the target user is a
+		//	site admin and they aren't
+		$read_only=!(($curr_user->type==='superuser') && ($curr_user->type!=='superuser'));
 	
 	//	This leaves superusers, who can't
 	//	modify outside their organization,
@@ -101,6 +103,37 @@
 		Render($template,'display_user.phtml');
 	
 	} else {
+	
+		//	
+	
+		//	Users can always elevate to
+		//	their own level of privilege
+		$elevate=array(
+			'user' => 'User'
+		);
+		
+		if (
+			($user->type==='superuser') ||
+			($user->type==='admin')
+		) {
+		
+			$elevate['superuser']='Organization Admin';
+		
+		}
+		
+		if ($user->type==='admin') {
+		
+			$elevate['admin']='Site Admin';
+		
+		}
+		
+		//	Create an array to use to find
+		//	the label for this user's type
+		$user_types=array(
+			'user' => 'User',
+			'superuser' => 'Organization Admin',
+			'admin' => 'Site Admin'
+		);
 	
 		//	Prepare the form
 		$elements=array(
@@ -162,20 +195,84 @@
 				'territorial_unit',
 				'Province/State & Country',
 				'^.+$',	//	Non-optional
-				$curr_user->territorial_unit
+				(is_null($curr_user->territorial_unit) || ($curr_user->territorial_unit===''))
+					?	$curr_user->country
+					:	$curr_user->country.' - '.$curr_user->territorial_unit
 			),
 			new TextFormElement(
 				'phone',
 				'Phone',
-				'^[\\d\\-\\w]+$',	//	Non-optional
+				'^[\\d\\-\\w\\(\\)\\+]+$',	//	Non-optional
 				$curr_user->phone
 			),
 			new TextFormElement(
 				'fax',
 				'Fax',
-				'^[\\d\\-\\w]*$',	//	Optional but with character restrictions
+				'^[\\d\\-\\w\\(\\)\\+]*$',	//	Optional but with character restrictions
 				$curr_user->fax
 			),
+			//	If the user as an administrator,
+			//	they can change the organization
+			//	that a user is a member of, otherwise
+			//	they can only view that organization
+			($user->type==='admin')
+				?	new DropDownFormElement(
+						'org_id',
+						$curr_user->org_id,
+						'Organization',
+						$dependencies['MISADBConn'],
+						true,
+						'SELECT `id`,`name` FROM `organizations` ORDER BY `name`'
+					)
+				:	new TextElement(
+						'Organization',
+						is_null($curr_user->organization) ? '' : $curr_user->organization->name
+					)
+			,
+			//	If the user is not a regular user,
+			//	they can enable/disable users
+			//
+			//	Also don't let users disable themselves,
+			//	that's just asking for trouble...
+			((($user->type==='superuser') || ($user->type==='admin')) && ($curr_user->id!==$user->id))
+				?	new CheckBoxFormElement(
+						'enabled',
+						$curr_user->enabled,
+						'Enabled'
+					)
+				:	new TextElement(
+						'Enabled',
+						$curr_user->enabled ? 'Yes' : 'No'
+					)
+			,
+			new CheckBoxFormElement(
+				'subscribed',
+				$curr_user->subscribed,
+				'Subscribed'
+			),
+			//	Regular users can't change
+			//	status, so they just see
+			//	a TextElement, but higher
+			//	levels of privilege see 
+			//	a drop-down which allows them
+			//	to make members up to their own
+			//	level of privilege
+			//
+			//	Also don't let users change
+			//	their own type, that's just asking
+			//	for trouble...
+			((($user->type==='superuser') || ($user->type==='admin')) && ($curr_user->id!==$user->id))
+				?	new DropDownFormElement(
+						'type',
+						is_null($curr_user->type) ? 'user' : $curr_user->type,
+						'Type',
+						$elevate
+					)
+				:	new TextElement(
+						'Type',
+						$user_types[is_null($curr_user->type) ? 'user' : $curr_user->type]
+					)
+			,
 			new SubmitFormElement(
 				'Submit'
 			)
@@ -185,7 +282,8 @@
 		//	Did we POST?
 		if (
 			($_SERVER['REQUEST_METHOD']==='POST') &&
-			($_SERVER['CONTENT_TYPE']==='application/x-www-form-urlencoded')
+			($_SERVER['CONTENT_TYPE']==='application/x-www-form-urlencoded') &&
+			($request->GetQueryString(LOGIN_KEY)!==TRUE_STRING)
 		) {
 		
 			//	Populate
@@ -209,9 +307,13 @@
 			//	null
 			foreach ($arr as &$value) {
 			
-				$value=MBString::Trim($value);
+				if (is_string($value)) {
+			
+					$value=MBString::Trim($value);
+					
+					if ($value==='') $value=null;
 				
-				if ($value==='') $value=null;
+				}
 			
 			}
 			

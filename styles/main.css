@@ -175,7 +175,7 @@ h1 {
 /*	FORM	*/
 
 
-form > * {
+form > *, .object_display > * {
 
 	/*	Same as elements outside the form	*/
 	margin-bottom: 20px;
@@ -183,14 +183,14 @@ form > * {
 }
 
 
-form > div {
+form > div, .object_display > div {
 
 	overflow: hidden;
 
 }
 
 
-form > div > div {
+form > div > div, .object_display > div > div {
 
 	box-sizing: border-box;
 	-moz-box-sizing: border-box;
@@ -203,7 +203,35 @@ form > div > div {
 }
 
 
-form > div > div:first-child {
+form div.error {
+
+	color: red;
+
+}
+
+
+form div > input[type="text"]:nth-child(2) {
+
+	margin-top: 10px;
+
+}
+
+
+form input[type="text"].error, form input[type="password"].error, form select.error {
+
+	border-color: red;
+
+}
+
+
+form input[type="text"], form input[type="password"], form select {
+
+	width: 250px;
+
+}
+
+
+form > div > div:first-child, .object_display > div > div:first-child {
 
 	padding-right: 10px;
 	text-align: right;
@@ -211,7 +239,7 @@ form > div > div:first-child {
 }
 
 
-form > div > div:nth-child(2) {
+form > div > div:nth-child(2), .object_display > div > div:nth-child(2) {
 
 	padding-left: 10px;
 

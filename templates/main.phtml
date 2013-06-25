@@ -30,6 +30,21 @@
 		
 		?>" />
 		
+		<script type="text/javascript" src="<?php
+		
+			echo(
+				htmlspecialchars(
+					$request->MakeFileLink(
+						array(
+							WHERE_JAVASCRIPT,
+							'shared.js'
+						)
+					)
+				)
+			);
+		
+		?>"></script>
+		
 		<?php	foreach ($header as $x) echo($x);	?>
 	
 	</head>

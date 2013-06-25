@@ -1,5 +1,83 @@
 <?php
 
-	var_dump($this->user);
-	
+	$curr_user=$this->user;
+
+	$view_user=array(
+		'User ID' => 'id',
+		'First Name' => 'first_name',
+		'Last Name' => 'last_name',
+		'Title' => 'title',
+		'E-Mail' => function () use ($curr_user) {
+		
+			return '<a href="mailto:'.htmlspecialchars($curr_user->email).'">'.htmlspecialchars($curr_user->email).'</a>';
+		
+		},
+		'Address' => 'address',
+		'Address (Continued)' => 'address2',
+		'City' => 'city',
+		'Province/State & Country' => function () use ($curr_user) {
+			
+			return htmlspecialchars(
+				(is_null($curr_user->territorial_unit) || ($curr_user->territorial_unit===''))
+					?	$curr_user->country
+					:	$curr_user->country.' - '.$curr_user->territorial_unit
+			);
+			
+		},
+		'Phone' => 'phone',
+		'Fax' => 'fax',
+		'Organization' => function () use ($curr_user) {
+		
+			return htmlspecialchars(is_null($curr_user->organization) ? '' : $curr_user->organization->name);
+		
+		},
+		'Enabled' => function () use ($curr_user) {
+		
+			return htmlspecialchars($curr_user->enabled ? 'Yes' : 'No');
+		
+		},
+		'Subscribed' => function () use ($curr_user) {
+		
+			return htmlspecialchars($curr_user->subscribed ? 'Yes' : 'No');
+		
+		},
+		'Type' => function () use ($curr_user) {
+		
+			return htmlspecialchars(
+				($curr_user->type==='admin')
+					?	'Site Admin'
+					:	(
+							($curr_user->type==='superuser')
+								?	'Organization Admin'
+								:	'User'
+						)
+			);
+		
+		}
+	);
+
 ?>
+
+<div class="object_display">
+
+	<?php	foreach ($view_user as $label=>$value):	?>
+
+	<div>
+
+		<div>
+		
+			<?php	echo(htmlspecialchars($label));	?>
+			
+		</div>
+		
+		<div>
+		
+			<?php	echo(($value instanceof Closure) ? $value() : htmlspecialchars($curr_user->$value));	?>
+		
+		</div>
+		
+	</div>
+
+	<?php	endforeach;	?>
+	
+</div>
