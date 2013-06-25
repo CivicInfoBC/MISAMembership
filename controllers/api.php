@@ -5,7 +5,7 @@
 	//	for API functions that doesn't have
 	//	the GUI that goes along with the
 	//	regular error function
-	function api_error ($errno, $msg) {
+	function api_error ($errno, $msg=null) {
 	
 		if (is_integer($errno)) {
 		
