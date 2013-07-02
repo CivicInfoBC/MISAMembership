@@ -24,6 +24,7 @@
 			);
 			
 		},
+		'Postal/Zip Code' => 'postal_code',
 		'Phone' => 'phone',
 		'Fax' => 'fax',
 		'Organization' => function () use ($curr_user) {
@@ -58,6 +59,7 @@
 
 ?>
 
+
 <div class="object_display">
 
 	<?php	foreach ($view_user as $label=>$value):	?>
@@ -66,7 +68,7 @@
 
 		<div>
 		
-			<?php	echo(htmlspecialchars($label));	?>
+			<?php	echo(htmlspecialchars($label));	?>:
 			
 		</div>
 		

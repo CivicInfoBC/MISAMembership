@@ -1,0 +1,64 @@
+<?php
+
+	$org=$this->org;
+	$type=$this->type;
+
+	$view_org=array(
+		'Organization ID' => 'id',
+		'Name' => 'name',
+		'Address' => 'address1',
+		'Address (Continued)' => 'address2',
+		'City' => 'city',
+		'Province/State & Country' => function () use ($org) {
+			
+			return htmlspecialchars(
+				(is_null($org->territorial_unit) || ($org->territorial_unit===''))
+					?	$org->country
+					:	$org->country.' - '.$org->territorial_unit
+			);
+			
+		},
+		'Postal/Zip Code' => 'postal_code',
+		'Phone' => 'phone',
+		'Fax' => 'fax',
+		'Type' => function () use ($type) {	return htmlspecialchars($type);	},
+		'Primary Contact Name' => 'contact_name',
+		'Primary Contact Title' => 'contact_title',
+		'Primary Contact E-Mail' => 'contact_email',
+		'Primary Contact Phone' => 'contact_phone',
+		'Primary Contact Fax' => 'contact_fax',
+		'Secondary Contact Name' => 'secondary_contact_name',
+		'Secondary Contact Title' => 'secondary_contact_title',
+		'Secondary Contact E-Mail' => 'secondary_contact_email',
+		'Secondary Contact Phone' => 'secondary_contact_phone',
+		'Secondary Contact Fax' => 'secondary_contact_fax',
+		'Enabled' => function () use ($org) {	return htmlspecialchars($org->enabled ? 'Yes' : 'No');	},
+		'Perpetual' => function () use ($org) {	return htmlspecialchars($org->perpetual ? 'Yes' : 'No');	}
+	);
+
+?>
+
+
+<div class="object_display">
+
+	<?php	foreach ($view_org as $label=>$value):	?>
+	
+	<div>
+	
+		<div>
+		
+			<?php	echo(htmlspecialchars($label));	?>:
+		
+		</div>
+		
+		<div>
+		
+			<?php	echo(($value instanceof Closure) ? $value() : htmlspecialchars($org->$value));	?>
+		
+		</div>
+	
+	</div>
+	
+	<?php	endforeach;	?>
+
+</div>

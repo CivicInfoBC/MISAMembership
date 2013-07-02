@@ -282,7 +282,7 @@
 		
 	} catch (Exception $e) {
 	
-		if (DEBUG) error(HTTP_INTERNAL_SERVER_ERROR,$e->message);
+		if (DEBUG) error(HTTP_INTERNAL_SERVER_ERROR,$e->getMessage());
 		else error(HTTP_INTERNAL_SERVER_ERROR);
 	
 	}

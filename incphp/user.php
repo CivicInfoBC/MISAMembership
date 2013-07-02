@@ -184,6 +184,9 @@
 		 */
 		public function Save () {
 		
+			//	If there's no ID, bail out
+			if (!isset($this->user['id'])) throw new Exception('No ID');
+		
 			//	Get database access
 			global $dependencies;
 			$conn=$dependencies[USER_DB];
@@ -210,9 +213,6 @@
 				}
 				
 			}
-			
-			//	If there's no ID, bail out
-			if (!isset($this->user['id'])) throw new Exception('No ID');
 			
 			//	Perform query against
 			//	the database
@@ -260,7 +260,7 @@
 			//	if applicable
 			if (!is_null($this->org)) {
 			
-				if (!$this->org->has_paid) {
+				if (!($this->org->has_paid || $this->org->perpetual)) {
 				
 					$code=4;
 					

@@ -129,6 +129,50 @@
 		
 		
 		/**
+		 *	Retrieves the name of the type given by
+		 *	\em type_id.
+		 *
+		 *	\param [in] $type_id
+		 *		The ID of the type to retriev.
+		 *
+		 *	\return
+		 *		The name of the type identified by
+		 *		\em type_id, \em null otherwise.
+		 */
+		public static function GetType ($type_id) {
+		
+			//	Guard against bad types
+			if (!is_integer($type_id)) return null;
+		
+			//	Fetch database connection
+			global $dependencies;
+			$conn=$dependencies[ORG_DB];
+			
+			//	Attempt to grab type name from
+			//	the database
+			$query=$conn->query(
+				sprintf(
+					'SELECT `name` FROM `membership_types` WHERE `id`=\'%s\'',
+					$conn->real_escape_string($type_id)
+				)
+			);
+			
+			//	Throw on error
+			if ($query===false) throw new Exception($conn->error);
+			
+			//	If there are zero rows, fail out
+			if ($query->num_rows===0) return null;
+			
+			//	Grab the row
+			$row=new MySQLRow($query);
+			
+			//	Return
+			return $row['name']->GetValue();
+		
+		}
+		
+		
+		/**
 		 *	Creates a new Organization object which
 		 *	wraps a database row.
 		 *
@@ -140,12 +184,68 @@
 		 */
 		public function __construct ($row) {
 		
-			if (!($row instanceof MySQLRow)) throw new Exception('Type mismatch');
+			if (!(
+				($row instanceof MySQLRow) ||
+				is_array($row)
+			)) throw new Exception('Type mismatch');
 			
 			if (!isset($row['id'])) throw new Exception('Schema mismatch');
 			
 			$this->row=$row;
-			$this->has_paid=self::HasPaid($row['id']->GetValue());
+			$this->has_paid=self::HasPaid($this->id);
+			//$this->has_paid=self::HasPaid($row['id']->GetValue());
+			$this->type=null;
+		
+		}
+		
+		
+		/**
+		 *	Saves this organization's data to the
+		 *	database.
+		 */
+		public function Save () {
+		
+			//	If there's no ID, bail out
+			if (!isset($this->row['id'])) throw new Exception('No ID');
+		
+			//	Get database connection
+			global $dependencies;
+			$conn=$dependencies[ORG_DB];
+			
+			//	Generate SET clause
+			$set_clause='';
+			
+			foreach ($this->row as $field=>$value) {
+			
+				if ($value instanceof MySQLDatum) $value=$value->GetValue();
+			
+				if ($field!=='id') {
+				
+					if ($set_clause!=='') $set_clause.=',';
+					
+					if (is_bool($value)) $value=$value ? 1 : 0;
+					
+					$set_clause.=sprintf(
+						'`%s`=%s',
+						preg_replace('/`/u','``',$field),
+						is_null($value)
+							?	'NULL'
+							:	'\''.$conn->real_escape_string($value).'\''
+					);
+				
+				}
+			
+			}
+			
+			//	Perform query against the
+			//	database
+			if ($conn->query(
+				sprintf(
+					'UPDATE `organizations` SET %s WHERE `id`=\'%s\'',
+					$set_clause,
+					$conn->real_escape_string($this->row['id'])
+				)
+			)===false) throw new Exception($conn->error);
 		
 		}
 		
@@ -226,8 +326,11 @@
 		public function __get ($name) {
 		
 			if ($name==='has_paid') return $this->has_paid;
-		
-			if (isset($this->row[$name])) return $this->row[$name]->GetValue();
+			
+			if (isset($this->row[$name])) return
+				($this->row instanceof MySQLRow)
+					?	$this->row[$name]->GetValue()
+					:	$this->row[$name];
 			
 			return null;
 		

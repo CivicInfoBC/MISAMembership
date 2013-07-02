@@ -104,8 +104,6 @@
 	
 	} else {
 	
-		//	
-	
 		//	Users can always elevate to
 		//	their own level of privilege
 		$elevate=array(
@@ -200,15 +198,21 @@
 					:	$curr_user->country.' - '.$curr_user->territorial_unit
 			),
 			new TextFormElement(
+				'postal_code',
+				'Postal/Zip Code',
+				'^\\s*[A-Za-z]\\d[A-Za-z](?:\\s|\\-)*\\d[A-Za-z]\\d|\\d{5}\\s*$',
+				$curr_user->postal_code
+			),
+			new TextFormElement(
 				'phone',
 				'Phone',
-				'^[\\d\\-\\w\\(\\)\\+]+$',	//	Non-optional
+				'^[\\d\\-\\s\\(\\)\\+]+$',	//	Non-optional
 				$curr_user->phone
 			),
 			new TextFormElement(
 				'fax',
 				'Fax',
-				'^[\\d\\-\\w\\(\\)\\+]*$',	//	Optional but with character restrictions
+				'^[\\d\\-\\s\\(\\)\\+]*$',	//	Optional but with character restrictions
 				$curr_user->fax
 			),
 			//	If the user as an administrator,
@@ -388,7 +392,7 @@
 		$template->form=$form;
 		
 		
-		Render($template,'person.phtml');
+		Render($template,'user_organization_form.phtml');
 		
 	}
 
