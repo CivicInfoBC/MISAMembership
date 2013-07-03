@@ -73,7 +73,8 @@
 		
 		$api_routes=array(
 			'login' => 'api_login.php',
-			'logout' => 'api_login.php'
+			'logout' => 'api_login.php',
+			'query' => 'api_query.php'
 		);
 		
 		if (

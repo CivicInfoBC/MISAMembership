@@ -22,6 +22,7 @@
 	
 		private $row;
 		private $has_paid;
+		private $membership_type;
 		
 		
 		/**
@@ -193,7 +194,7 @@
 			
 			$this->row=$row;
 			$this->has_paid=self::HasPaid($this->id);
-			//$this->has_paid=self::HasPaid($row['id']->GetValue());
+			$this->membership_type=self::GetType($this->membership_type_id);
 			$this->type=null;
 		
 		}
@@ -306,6 +307,7 @@
 			}
 			
 			$returnthis['has_paid']=$this->has_paid ? 1 : 0;
+			$returnthis['membership_type']=$this->membership_type;
 			
 			return $returnthis;
 		
@@ -326,6 +328,7 @@
 		public function __get ($name) {
 		
 			if ($name==='has_paid') return $this->has_paid;
+			if ($name==='membership_type') return $this->membership_type;
 			
 			if (isset($this->row[$name])) return
 				($this->row instanceof MySQLRow)
@@ -352,7 +355,10 @@
 		 */
 		public function __isset ($name) {
 		
-			if ($name==='has_paid') return true;
+			if (
+				($name==='has_paid') ||
+				($name==='membership_type')
+			) return true;
 		
 			return isset($this->row[$name]);
 		

@@ -228,6 +228,104 @@
 		
 		
 		/**
+		 *	Retrieves the number of users in the database.
+		 *
+		 *	\return
+		 *		The number of users in the database.
+		 */
+		public static function GetCount () {
+		
+			//	Get database access
+			global $dependencies;
+			$conn=$dependencies[USER_DB];
+			
+			//	Execute query
+			$query=$conn->query(
+				'SELECT
+					COUNT(*)
+				FROM
+					`users`'
+			);
+			
+			//	Throw on error
+			if ($query===false) throw new Exception($conn->error);
+			
+			//	Throw if there are no rows
+			if ($query->num_rows===0) throw new Exception('No rows');
+			
+			//	Extract row
+			$row=new MySQLRow($query);
+			
+			//	Return
+			return $row[0]->GetValue();
+		
+		}
+		
+		
+		/**
+		 *	Retrieves a page of users from the database.
+		 *
+		 *	\param [in] $page_num
+		 *		The number of the page to retrieve.
+		 *	\param [in] $num_per_page
+		 *		The maximum number of results to
+		 *		return on each page.
+		 *	\param [in] $order_by
+		 *		ORDER BY clauses which shall be used
+		 *		to determine how the results are
+		 *		ordered.
+		 *
+		 *	\return
+		 *		An enumerated array of results.
+		 */
+		public static function GetPage ($page_num, $num_per_page, $order_by) {
+		
+			//	Get database access
+			global $dependencies;
+			$conn=$dependencies[USER_DB];
+			
+			//	Get the IDs of the users on
+			//	this page
+			$query=$conn->query(
+				sprintf(
+					'SELECT
+						`id`
+					FROM
+						`users`
+					%s
+					LIMIT %s,%s',
+					(
+						(isset($order_by) && ($order_by!==''))
+							?	'ORDER BY '.$order_by
+							:	''
+					),
+					intval(($page_num-1)*$num_per_page),
+					intval($num_per_page)
+				)
+			);
+			
+			//	Throw on error
+			if ($query===false) throw new Exception($conn->error);
+			
+			//	Prepare an array
+			$results=array();
+			
+			//	Short-circuit out if no results
+			if ($query->num_rows===0) return $results;
+			
+			//	Loop over the results
+			for (
+				$row=new MySQLRow($query);
+				!is_null($row);
+				$row=$row->Next()
+			) $results[]=self::GetByID($row[0]->GetValue());
+			
+			return $results;
+		
+		}
+		
+		
+		/**
 		 *	Checks to see if the user
 		 *	account-in-question is able to login
 		 *	independent of correct username/password.
@@ -904,8 +1002,8 @@
 			
 			$returnthis['user']=$user;
 			$returnthis['organization']=is_null($this->org) ? null : $this->org->ToArray();
-			$returnthis['session_key']=is_null($this->session_key) ? null : $this->session_key;
-			$returnthis['session_expiry']=is_null($this->session_expiry) ? null : $this->session_expiry->format('Y,m,d,H,i,s');
+			if (!is_null($this->session_key)) $returnthis['session_key']=$this->session_key;
+			if (!is_null($this->session_expiry)) $returnthis['session_expiry']=$this->session_expiry->format('Y,m,d,H,i,s');
 			
 			return $returnthis;
 		
