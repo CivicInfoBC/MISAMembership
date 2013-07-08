@@ -47,6 +47,21 @@
 	);
 	
 	
+	//	Title
+	$title=(
+		(
+			isset($user->organization) &&
+			($user->organization->id===$org->id)
+		)
+			?	'My Organization'
+			:	(
+					$read_only
+						?	'View Organization'
+						:	'Edit Organization'
+				)
+	);
+	
+	
 	//	IF we're just displaying the organizational
 	//	information we have all the information we
 	//	need to dispatch to a template

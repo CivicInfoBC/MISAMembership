@@ -40,7 +40,7 @@ body {
 /*	UNIFORM WIDTH	*/
 
 
-#banner, #page_title, #main, #footer > * {
+#banner, #page_title, #main, #footer > *, #top_nav {
 
 	width: 960px;
 	margin-left: auto;
@@ -69,6 +69,23 @@ body {
 	font-size: 8pt;
 	text-transform: uppercase;
 	background-color: #2B3549;
+	position: relative;
+
+}
+
+
+#user_area {
+
+	position: absolute;
+	top: 0px;
+	right: 0px;
+	margin-top: 0px !important;
+	line-height: 90px;
+	vertical-align: middle;
+	text-align: right;
+	padding-right: 10px;
+	font-size: 10pt;
+	text-transform: none;
 
 }
 
@@ -109,6 +126,60 @@ body {
 	padding-left: 15px;
 	font-size: 19pt;
 	color: #BFCBE6;
+
+}
+
+#top_nav > a {
+
+	display: block;
+	float: left;
+	height: 50px;
+	line-height: 50px;
+	vertical-align: middle;
+	text-align: center;
+	color: #E6E6E6;
+	text-decoration: inherit;
+	width: 192px;
+	width: calc((100% - 1px) / 5);
+	width: -webkit-calc(100% / 5);
+
+}
+
+#top_nav.four > a {
+
+	width: 240px;
+	width: calc((100% - 1px) /4);
+	width: -webkit-calc(100% / 4);
+
+}
+
+#top_nav > a:nth-child(1) {
+
+	background: #73161E;
+
+}
+
+#top_nav > a:nth-child(2) {
+
+	background: #BF0F30;
+	
+}
+
+#top_nav > a:nth-child(3) {
+
+	background: #868686;
+	
+}
+
+#top_nav > a:nth-child(4) {
+
+	background: #378CC2;
+
+}
+
+#top_nav > a:nth-child(5) {
+
+	background: #17286A;
 
 }
 
@@ -175,7 +246,7 @@ h1 {
 /*	FORM	*/
 
 
-form > *, .object_display > * {
+#main > form > *, .object_display > * {
 
 	/*	Same as elements outside the form	*/
 	margin-bottom: 20px;
@@ -183,14 +254,14 @@ form > *, .object_display > * {
 }
 
 
-form > div, .object_display > div {
+#main > form > div, .object_display > div {
 
 	overflow: hidden;
 
 }
 
 
-form > div > div, .object_display > div > div {
+#main > form > div > div, .object_display > div > div {
 
 	box-sizing: border-box;
 	-moz-box-sizing: border-box;
@@ -202,36 +273,42 @@ form > div > div, .object_display > div > div {
 
 }
 
+select + input[type="text"] {
 
-form div.error {
+	display: block;
+
+}
+
+
+#main > form div.error {
 
 	color: red;
 
 }
 
 
-form div > input[type="text"]:nth-child(2) {
+#main > form div > input[type="text"]:nth-child(2) {
 
 	margin-top: 10px;
 
 }
 
 
-form input[type="text"].error, form input[type="password"].error, form select.error {
+#main > form input[type="text"].error, form input[type="password"].error, form select.error {
 
 	border-color: red;
 
 }
 
 
-form input[type="text"], form input[type="password"], form select {
+#main > form input[type="text"], form input[type="password"], form select {
 
 	width: 250px;
 
 }
 
 
-form > div > div:first-child, .object_display > div > div:first-child {
+#main > form > div > div:first-child, .object_display > div > div:first-child {
 
 	padding-right: 10px;
 	text-align: right;
@@ -239,14 +316,14 @@ form > div > div:first-child, .object_display > div > div:first-child {
 }
 
 
-form > div > div:nth-child(2), .object_display > div > div:nth-child(2) {
+#main > form > div > div:nth-child(2), .object_display > div > div:nth-child(2) {
 
 	padding-left: 10px;
 
 }
 
 
-input[type="submit"] {
+#main > form input[type="submit"] {
 
 	display: block;
 	margin-left: auto;
@@ -257,7 +334,7 @@ input[type="submit"] {
 }
 
 
-input[type="text"], input[type="password"] {
+#main > form input[type="text"], #main > form input[type="password"] {
 
 	width: 150px;
 
@@ -269,5 +346,90 @@ form > p {
 	color: red;
 	font-weight: bold;
 	text-align: center;
+
+}
+
+
+/*	LISTINGS	*/
+
+#results > * {
+
+	margin-top: 10px;
+
+}
+
+#results > *:first-child {
+
+	margin-top: 0px;
+
+}
+
+#results > *:first-child,
+#results > *:nth-child(2),
+#results > *:nth-child(3) {
+
+	font-weight: bold;
+
+}
+
+#results > div {
+
+	text-align: center;
+
+}
+
+#results a {
+
+	text-decoration: inherit;
+
+}
+
+#results form {
+
+	display: inline;
+
+}
+
+#results input[type="text"] {
+
+	width: 25px;
+
+}
+
+#results input[type="text"], #results select {
+
+	text-align: center;
+	margin-left: 5px;
+	margin-right: 5px;
+	font: inherit;
+	font-size: inherit;
+	text-decoration: inherit;
+	text-transform: inherit;
+	color: inherit;
+	border: 1px black solid;
+	font-style: inherit;
+
+}
+
+#results .nav_arrow {
+
+	display: inline-block;
+	margin-left: 15px;
+	width: 10px;
+	overflow: hidden;
+
+}
+
+#results .nav_arrow > a {
+
+	text-decoration: inherit;
+	color: inherit;
+
+}
+
+#results .nav_arrow:first-child {
+
+	margin-left: 0px;
+	margin-right: 15px;
 
 }

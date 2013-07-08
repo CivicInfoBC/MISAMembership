@@ -4,7 +4,7 @@
 	require_once('./script_config.php');
 	
 	
-	function get_mysql_conn ($username, $password, $host, $database) {
+	function get_mysql_conn ($username, $password, $host, $database, $set_charset=true) {
 	
 		$conn=new mysqli(
 			$host,
@@ -15,7 +15,7 @@
 		
 		if ($conn->connect_error) throw new Exception($conn->connect_error);
 		
-		if ($conn->set_charset(SQL_CHARSET)===false) throw new Exception($conn->error);
+		if ($set_charset && ($conn->set_charset(SQL_CHARSET)===false)) throw new Exception($conn->error);
 		
 		return $conn;
 	
@@ -87,6 +87,103 @@
 	}
 	
 	
+	function fix_terr_unit (&$terr_unit, &$country) {
+	
+		//	Get rid of two letter acronyms in favour of
+		//	new values
+		switch ($terr_unit) {
+		
+			case 'WTF':
+			case 'XX':
+				$terr_unit=null;
+				break;
+			case 'GA':
+			//	Who even did this?
+			case 'Atlanta':
+				$terr_unit='Georgia';
+				$country='United States of America';
+				break;
+			case 'SK':
+				$terr_unit='Saskatchewan';
+				$country='Canada';
+				break;
+			case 'BC':
+				$terr_unit='British Columbia';
+				$country='Canada';
+				break;
+			case 'ON':
+				$terr_unit='Ontario';
+				$country='Canada';
+				break;
+			case 'AB':
+				$terr_unit='Alberta';
+				$country='Canada';
+				break;
+			case 'QC':
+				$terr_unit='Quebec';
+				$country='Canada';
+				break;
+			case 'YK':
+				$terr_unit='Yukon';
+				$country='Canada';
+				break;
+			case 'NT':
+				$terr_unit='Northwest Territories';
+				$country='Canada';
+				break;
+			case 'NF':
+				$terr_unit='Newfoundland and Labrador';
+				$country='Canada';
+				break;
+			case 'MB':
+				$terr_unit='Manitoba';
+				$country='Canada';
+				break;
+			case 'CA':
+				$terr_unit='California';
+				$country='United States of America';
+				break;
+			case 'NU':
+				$terr_unit='Nunavut';
+				$country='Canada';
+				break;
+			case 'NB':
+				$terr_unit='New Brunswick';
+				$country='Canada';
+				break;
+			case 'MA':
+				$terr_unit='Massachusetts';
+				$country='United States of America';
+				break;
+			default:break;
+		
+		}
+	
+	}
+	
+	
+	function fix_country (&$country) {
+	
+		switch ($country) {
+		
+			case 'CA':
+				$country='Canada';
+				break;
+			case 'US':
+				$country='United States of America';
+				break;
+			case 'NZ':
+				$country='New Zealand';
+				break;
+			case 'UK':
+				$country='United Kingdom of Great Britain and Northern Ireland';
+				break;
+		
+		}
+	
+	}
+	
+	
 	//	Get database connections
 	
 	try {
@@ -104,12 +201,13 @@
 			OLD_USERNAME,
 			OLD_PASSWORD,
 			OLD_HOST,
-			OLD_DATABASE
+			OLD_DATABASE,
+			false
 		);
 		
 	} catch (Exception $e) {
 	
-		die($e->message);
+		die($e->getMessage());
 	
 	}
 	
@@ -119,7 +217,9 @@
 	if (
 		($new_conn->query('DELETE FROM `users`')===false) ||
 		($new_conn->query('DELETE FROM `organizations`')===false) ||
-		($new_conn->query('DELETE FROM `membership_types`')===false)
+		($new_conn->query('DELETE FROM `payment`')===false) ||
+		($new_conn->query('DELETE FROM `membership_types`')===false) ||
+		($new_conn->query('DELETE FROM `membership_years`')===false)
 	) die($new_conn->error);
 	
 	
@@ -160,6 +260,7 @@
 		)===false) die($new_conn->error);
 	
 	}
+	
 	
 	//	Next we transform the organizations table,
 	//	since that will take care of most of the
@@ -220,164 +321,98 @@
 		switch ($row['enabled']) {
 		
 			case 'true':
-			
 				$enabled=1;
 				break;
-				
 			case 'false':
-			
 				$enabled=0;
 				break;
-				
 			default:
-			
 				$enabled=null;
 				break;
 		
 		}
 		
-		//	Do some province/state processing
-		if (
+		$terr_unit=(
 			is_null($row['otherProvince']) ||
 			($row['otherProvince']==='')
-		) $terr_unit=$row['province'];
-		else switch ($row['otherProvince']) {
+		) ? $row['province'] : $row['otherProvince'];
+		$country=$row['country'];
 		
-			//	Only populating values I've
-			//	observed
-			
-			case 'WTF':
-			
-				//	Garbage, don't even add it
-				continue;
-				
-			case 'California':
-			
-				$terr_unit='CA';
-				break;
-				
-			case 'Idaho':
-			
-				$terr_unit='ID';
-				break;
-			
-			//	Georgia
-			case 'GA':
-			
-				$terr_unit='GA';
-				break;
-				
-			case 'Northern Ireland':
-			
-				$terr_unit='Northern Ireland';
-				break;
-				
-			case 'MA':
-			
-				//	Massachusetts
-				$terr_unit='MA';
-				break;
-				
-			case 'Georgia':
-			
-				$terr_unit='GA';
-				break;
-				
-			case 'Wellington':
-			
-				$terr_unit='Wellington';
-				break;
-				
-			case 'Atlanta':
-			
-				//	Who even did this????
-				$terr_unit='GA';
-				break;
-				
-			case 'Ohio':
-			
-				$terr_unit='OH';
-				break;
-				
-			case 'Washington':
-			
-				$terr_unit='WA';
-				break;
+		fix_terr_unit($terr_unit,$country);
+		fix_country($country);
 		
-		}
+		$query_text=sprintf(
+			'INSERT INTO `organizations` (
+				`name`,
+				`address1`,
+				`address2`,
+				`city`,
+				`postal_code`,
+				`territorial_unit`,
+				`country`,
+				`phone`,
+				`membership_type_id`,
+				`contact_name`,
+				`contact_title`,
+				`contact_email`,
+				`contact_phone`,
+				`contact_fax`,
+				`secondary_contact_name`,
+				`secondary_contact_title`,
+				`secondary_contact_email`,
+				`secondary_contact_phone`,
+				`secondary_contact_fax`,
+				`enabled`
+			) VALUES (
+				%1$s,
+				%2$s,
+				%3$s,
+				%4$s,
+				%5$s,
+				%6$s,
+				%7$s,
+				%8$s,
+				%9$s,
+				%10$s,
+				%11$s,
+				%12$s,
+				%8$s,
+				%13$s,
+				%14$s,
+				%15$s,
+				%16$s,
+				%17$s,
+				%18$s,
+				%19$s
+			)',
+			make_sql($new_conn,$row['name']),					//	1
+			make_sql($new_conn,$row['address1']),				//	2
+			make_sql($new_conn,$row['address2']),				//	3
+			make_sql($new_conn,$row['city']),					//	4
+			make_sql($new_conn,$row['postalCode']),				//	5
+			make_sql($new_conn,$terr_unit),						//	6
+			make_sql($new_conn,$country),						//	7
+			make_sql($new_conn,$row['contactTelephone']),		//	8
+			make_sql($new_conn,$mt_id),							//	9
+			make_sql($new_conn,$row['contactName']),			//	10
+			make_sql($new_conn,$row['contactTitle']),			//	11
+			make_sql($new_conn,$row['contactEmail']),			//	12
+			make_sql($new_conn,$row['contactFax']),				//	13
+			make_sql($new_conn,$row['secondContactName']),		//	14
+			make_sql($new_conn,$row['secondContactTitle']),		//	15
+			make_sql($new_conn,$row['secondContactEmail']),		//	16
+			make_sql($new_conn,$row['secondContactTelephone']),	//	17
+			make_sql($new_conn,$row['secondContactFax']),		//	18
+			make_sql($new_conn,$enabled)						//	19
+		);
 		
 		//	Insert data
-		if ($new_conn->query(
-			sprintf(
-				'INSERT INTO `organizations` (
-					`name`,
-					`address1`,
-					`address2`,
-					`city`,
-					`postal_code`,
-					`territorial_unit`,
-					`country`,
-					`phone`,
-					`membership_type_id`,
-					`contact_name`,
-					`contact_title`,
-					`contact_email`,
-					`contact_phone`,
-					`contact_fax`,
-					`secondary_contact_name`,
-					`secondary_contact_title`,
-					`secondary_contact_email`,
-					`secondary_contact_phone`,
-					`secondary_contact_fax`,
-					`enabled`
-				) VALUES (
-					%1$s,
-					%2$s,
-					%3$s,
-					%4$s,
-					%5$s,
-					%6$s,
-					%7$s,
-					%8$s,
-					%9$s,
-					%10$s,
-					%11$s,
-					%12$s,
-					%8$s,
-					%13$s,
-					%14$s,
-					%15$s,
-					%16$s,
-					%17$s,
-					%18$s,
-					%19$s
-				)',
-				make_sql($new_conn,$row['name']),					//	1
-				make_sql($new_conn,$row['address1']),				//	2
-				make_sql($new_conn,$row['address2']),				//	3
-				make_sql($new_conn,$row['city']),					//	4
-				make_sql($new_conn,$row['postalCode']),				//	5
-				make_sql($new_conn,$terr_unit),						//	6
-				make_sql($new_conn,$row['country']),				//	7
-				make_sql($new_conn,$row['contactTelephone']),		//	8
-				make_sql($new_conn,$mt_id),							//	9
-				make_sql($new_conn,$row['contactName']),			//	10
-				make_sql($new_conn,$row['contactTitle']),			//	11
-				make_sql($new_conn,$row['contactEmail']),			//	12
-				make_sql($new_conn,$row['contactFax']),				//	13
-				make_sql($new_conn,$row['secondContactName']),		//	14
-				make_sql($new_conn,$row['secondContactTitle']),		//	15
-				make_sql($new_conn,$row['secondContactEmail']),		//	16
-				make_sql($new_conn,$row['secondContactTelephone']),	//	17
-				make_sql($new_conn,$row['secondContactFax']),		//	18
-				make_sql($new_conn,$enabled)						//	19
-			)
-		)===false) die($new_conn->error);
+		if ($new_conn->query($query_text)===false) die($new_conn->error."\r\n".$query_text);
 	
 	}
 	
 	
-	//	Last we transform the users data
+	//	Transform the users data
 	
 	//	Select existing users
 	//
@@ -460,70 +495,285 @@
 		
 		//	Transform enabled field to new boolean
 		//	values
-		if ($row['enabled']==='true') $enabled=1;
-		else $enabled=0;
+		$enabled=($row['enabled']==='true') ? 1 : 0;
 		
-		//	Transform province/otherProvince
-		if (
+		//	Fix country/province/state
+		$terr_unit=(
 			is_null($row['otherProvince']) ||
 			($row['otherProvince']==='')
-		) $terr_unit=$row['province'];
-		else $terr_unit=$row['otherProvince'];
+		) ? $row['province'] : $row['otherProvince'];
+		$country=$row['country'];
+		
+		fix_terr_unit($terr_unit,$country);
+		fix_country($country);
+		
+		//	Transform to new user type
+		switch ($row['rolesId']) {
+		
+			case 1:
+				$type='admin';
+				break;
+			case 2:
+			case 3:
+				$type='superuser';
+				break;
+			case 4:
+			default:
+				$type='user';
+				break;
+		
+		}
+		
+		$query_text=sprintf(
+			'INSERT INTO `users` (
+				`first_name`,
+				`last_name`,
+				`email`,
+				`title`,
+				`username`,
+				`password`,
+				`address`,
+				`address2`,
+				`city`,
+				`postal_code`,
+				`territorial_unit`,
+				`country`,
+				`phone`,
+				`fax`,
+				`org_id`,
+				`enabled`,
+				`type`
+			) VALUES (
+				%1$s,
+				%2$s,
+				%3$s,
+				%4$s,
+				%5$s,
+				%6$s,
+				%7$s,
+				%8$s,
+				%9$s,
+				%10$s,
+				%11$s,
+				%12$s,
+				%13$s,
+				%14$s,
+				%15$s,
+				%16$s,
+				%17$s
+			)',
+			make_sql($new_conn,$row['firstName']),	//	1
+			make_sql($new_conn,$row['lastName']),	//	2
+			make_sql($new_conn,$row['email']),		//	3
+			make_sql($new_conn,$row['title']),		//	4
+			make_sql($new_conn,$row['userName']),	//	5
+			make_sql($new_conn,$row['password']),	//	6
+			make_sql($new_conn,$row['address1']),	//	7
+			make_sql($new_conn,$row['address2']),	//	8
+			make_sql($new_conn,$row['city']),		//	9
+			make_sql($new_conn,$row['postalCode']),	//	10
+			make_sql($new_conn,$terr_unit),			//	11
+			make_sql($new_conn,$country),			//	12
+			make_sql($new_conn,$row['phone']),		//	13
+			make_sql($new_conn,$row['fax']),		//	14
+			make_sql($new_conn,$org_id),			//	15
+			make_sql($new_conn,$enabled),			//	16
+			make_sql($new_conn,$type)				//	17
+		);
 		
 		//	Insert data
+		if ($new_conn->query($query_text)===false) die($new_conn->error."\r\n".$query_text);
+	
+	}
+	
+	
+	//	Scrape payment information
+	
+	//	Get the years that certain organizations
+	//	were new
+	$query=$old_conn->query(
+		'SELECT
+			`id`,
+			`membershipYear`
+		FROM
+			`transactions`
+		WHERE
+			`appliesto`=\'other\''
+	);
+	
+	if ($query===false) die($old_conn->error);
+	
+	$year_new=array();
+	
+	while (!is_null($row=$query->fetch_assoc())) $year_new[$row['id']]=$row['membershipYear'];
+	
+	//	Get payment information
+	$query=$old_conn->query(
+		'SELECT
+			`membershiptypes`.`name` AS `membershiptype_name`,
+			`organizations`.`name` AS `org_name`,
+			`transactions`.*
+		FROM
+			`transactions`
+			LEFT OUTER JOIN (
+				SELECT
+					*
+				FROM
+					`onlinepaymentlog`
+				WHERE
+					`conferenceExhibitorId` IS NULL AND
+					`conferenceDelegateId` IS NULL AND
+					`transaction_approved`<>0 AND
+					`transaction_result`=\'Transaction Normal\' AND
+					`membershiptypeId` IS NOT NULL
+				GROUP BY
+					`organizationsId`,
+					YEAR(`paymentdate`)
+			) `onlinepaymentlog` ON (
+				`onlinepaymentlog`.`organizationsId`=`transactions`.`organizationsId` AND
+				`transactions`.`amount`=`onlinepaymentlog`.`amount` AND
+				YEAR(`onlinepaymentlog`.`paymentdate`)=`transactions`.`membershipyear`
+			)
+			LEFT OUTER JOIN `membershiptypes`
+			ON `membershiptypes`.`id`=`onlinepaymentlog`.`membershipTypeId`,
+			`organizations`
+		WHERE
+			`transactions`.`appliesto`=\'membership\' AND
+			`organizations`.`id`=`transactions`.`organizationsId`'
+	);
+	
+	if ($query===false) die($old_conn->error);
+	
+	//	A map of years we've added to the
+	//	`membership_years` table
+	$years=array();
+	
+	//	Loop over each row of the payment
+	//	information
+	while (!is_null($row=$query->fetch_assoc())) {
+	
+		//	Get the corresponding organization
+		$org_query=$new_conn->query(
+			sprintf(
+				'SELECT
+					`id`
+				FROM
+					`organizations`
+				WHERE
+					`name`=\'%s\'',
+				$new_conn->real_escape_string($row['org_name'])
+			)
+		);
+		
+		if ($org_query===false) die($new_conn->error);
+		
+		if ($org_query->num_rows===0) {
+		
+			var_dump($row);
+		
+			die('Org mismatch');
+			
+		}
+		
+		$org_row=$org_query->fetch_assoc();
+		$org_id=$org_row['id'];
+		
+		//	Add this year if we haven't previously
+		if (!isset($years[$row['membershipYear']])) {
+			
+			if ($new_conn->query(
+				sprintf(
+					'INSERT INTO `membership_years` (
+						`name`,
+						`start`,
+						`end`
+					) VALUES (
+						\'%1$s\',
+						\'%1$s-01-01 00:00:00\',
+						\'%1$s-12-31 23:59:59\'
+					)',
+					$new_conn->real_escape_string($row['membershipYear'])
+				)
+			)===false) die($new_conn->error);
+			
+			//	Specify that we've now set this
+			$years[$row['membershipYear']]=$new_conn->insert_id;
+		
+		}
+		
+		//	Get the membership type
+		if (is_null($row['membershiptype_name'])) {
+		
+			$membership_type=null;
+		
+		} else {
+		
+			$mt_query=$new_conn->query(
+				sprintf(
+					'SELECT
+						`id`
+					FROM
+						`membership_types`
+					WHERE
+						`name`=\'%s\'',
+					$new_conn->real_escape_string($row['membershiptype_name'])
+				)
+			);
+			
+			if ($mt_query===false) die($new_conn->error);
+			
+			if ($mt_query->num_rows===0) {
+			
+				$membership_type=null;
+			
+			} else {
+			
+				$mt_row=$mt_query->fetch_assoc();
+				$membership_type=$mt_row['id'];
+			
+			}
+		
+		}
+		
+		//	INSERT
 		if ($new_conn->query(
 			sprintf(
-				'INSERT INTO `users` (
-					`first_name`,
-					`last_name`,
-					`email`,
-					`title`,
-					`username`,
-					`password`,
-					`address`,
-					`address2`,
-					`city`,
-					`postal_code`,
-					`territorial_unit`,
-					`country`,
-					`phone`,
-					`fax`,
+				'INSERT INTO `payment` (
+					`membership_year_id`,
+					`type`,
+					`created`,
+					`subtotal`,
+					`tax`,
+					`total`,
+					`paid`,
 					`org_id`,
-					`enabled`
+					`datepaid`,
+					`membership_type_id`
 				) VALUES (
-					%1$s,
-					%2$s,
-					%3$s,
-					%4$s,
-					%5$s,
-					%6$s,
-					%7$s,
-					%8$s,
-					%9$s,
-					%10$s,
-					%11$s,
-					%12$s,
-					%13$s,
-					%14$s,
-					%15$s,
-					%16$s
+					\'%1$s\',
+					\'%2$s\',
+					\'%3$s\',
+					\'0.00\',
+					\'0.00\',
+					\'%4$s\',
+					\'1\',
+					\'%5$s\',
+					\'%3$s\',
+					%6$s
 				)',
-				make_sql($new_conn,$row['firstName']),	//	1
-				make_sql($new_conn,$row['lastName']),	//	2
-				make_sql($new_conn,$row['email']),		//	3
-				make_sql($new_conn,$row['title']),		//	4
-				make_sql($new_conn,$row['userName']),	//	5
-				make_sql($new_conn,$row['password']),	//	6
-				make_sql($new_conn,$row['address1']),	//	7
-				make_sql($new_conn,$row['address2']),	//	8
-				make_sql($new_conn,$row['city']),		//	9
-				make_sql($new_conn,$row['postalCode']),	//	10
-				make_sql($new_conn,$terr_unit),			//	11
-				make_sql($new_conn,$row['country']),	//	12
-				make_sql($new_conn,$row['phone']),		//	13
-				make_sql($new_conn,$row['fax']),		//	14
-				make_sql($new_conn,$org_id),			//	15
-				make_sql($new_conn,$enabled)			//	16
+				$new_conn->real_escape_string($years[$row['membershipYear']]),
+				(
+					(
+						isset($year_new[$row['organizationsId']]) &&
+						($year_new[$row['organizationsId']]==$row['membershipYear'])
+					)
+						?	'membership new'
+						:	'membership renewal'
+				),
+				$new_conn->real_escape_string($row['entryDateTime']),
+				$new_conn->real_escape_string($row['amount']),
+				$new_conn->real_escape_string($org_id),
+				is_null($membership_type) ? 'NULL' : '\''.$new_conn->real_escape_string($membership_type).'\''
 			)
 		)===false) die($new_conn->error);
 	

@@ -51,13 +51,27 @@
 	//	Make sure the "type" property
 	//	is set
 	if (!isset($api_request->type)) api_error(HTTP_BAD_REQUEST);
+
+	
+	//	Get active or set it to default
+	$active=(
+		(
+			isset($api_request->active) &&
+			is_bool($api_request->active)
+		)
+			?	$api_request->active
+			:	null
+	);
 	
 	
-	//	User queries
-	if ($api_request->type==='user') {
+	if (
+		($api_request->type==='user') ||
+		($api_request->type==='organization')
+	) {
 	
 		
-		//	An API query request for users shall be as follows:
+		//	An API query request for users or organizations shall
+		//	be as follows:
 		//
 		//
 		//	To query information for a specific user:
@@ -65,11 +79,11 @@
 		//	{
 		//		"action":	"query",
 		//		"api_key":	<API key of API consumer>,
-		//		"type":		"user",
+		//		"type":		"user"/"organization",
 		//		"id":		<numerical ID of user>
 		//	}
 		//
-		//	The response shall be:
+		//	The response for users shall be:
 		//
 		//	{
 		//		"exists":		<true if the user exists and the preceding
@@ -80,13 +94,21 @@
 		//						 not a member of any organization
 		//	}
 		//
+		//	The response for organizations shall be:
 		//
-		//	To obtain bulk user information:
+		//	{
+		//		"exists":		<true if the organization exists and the preceding
+		//						 fields should be regarded, false otherwise>
+		//		"organization":	<an object representing the organization>
+		//	}
+		//
+		//
+		//	To obtain bulk user/organization information:
 		//
 		//	{
 		//		"action":	"query",
 		//		"api_key":	<API key of API consumer>,
-		//		"type":		"user",
+		//		"type":		"user"/"organization",
 		//		"page":		<page of results to show>,
 		//		"per_page":	<number of results per page>,
 		//		"order_by":	[
@@ -100,6 +122,12 @@
 		//						},
 		//						...repeat as needed...
 		//					]
+		//		"active":	<Optional, may be set to true, false
+		//					 or null.  If true only active users
+		//					 or organizations will be counted, if
+		//					 false only inactive users or organizations
+		//					 will be counted.  If null all users
+		//					 or organizations will be counted.>
 		//	}
 		//
 		//	The response shall be:
@@ -121,18 +149,22 @@
 		//	}
 		
 		
-		//	Handle single user query
+		//	Handle single query
 		if (isset($api_request->id)) {
 		
 			//	Sanity check on the ID
 			if (!is_integer($api_request->id)) api_error(HTTP_BAD_REQUEST);
 			
-			//	Attempt to get user by ID
-			$api_result=User::GetByID($api_request->id);
+			//	Attempt to get result by ID
+			$api_result=(
+				($api_request->type==='user')
+					?	User::GetByID($api_result->id)
+					:	Organization::GetByID($api_result->id)
+			);
 			
 			if (is_null($api_result)) {
 			
-				//	User does not exist
+				//	Does not exist
 			
 				$api_result=array(
 					'exists' => false
@@ -140,9 +172,20 @@
 			
 			} else {
 			
-				//	User exists
+				//	Exists
 				
-				$api_result=$api_result->ToArray();
+				if ($api_request->type==='user') {
+				
+					$api_result=$api_result->ToArray();
+				
+				} else {
+				
+					$arr=array();
+					$arr['organization']=$api_result->ToArray();
+					$api_result=$arr;
+				
+				}
+				
 				$api_result['exists']=true;
 			
 			}
@@ -192,8 +235,8 @@
 				!is_array($api_request->order_by)
 			) api_error(HTTP_BAD_REQUEST);
 			
-			//	Get the number of users
-			$count=User::GetCount();
+			//	Get the number of results
+			$count=($api_request->type==='user') ? User::GetCount($active) : Organization::GetCount($active);
 			
 			//	Determine the number of pages
 			//	of results
@@ -232,16 +275,42 @@
 				
 			}
 			
-			//	Retrieve results
-			$results=User::GetPage(
-				$page_num,
-				$num_per_page,
-				$order_by
-			);
+			if ($api_request->type==='user') {
 			
-			//	Generate output
-			$results_json=array();
-			foreach ($results as $x) $results_json[]=$x->ToArray();
+				//	Retrieve results
+				$results=User::GetPage(
+					$page_num,
+					$num_per_page,
+					$order_by,
+					$active
+				);
+				
+				//	Generate output
+				$results_json=array();
+				foreach ($results as $x) $results_json[]=$x->ToArray();
+			
+			} else {
+			
+				//	Retrieve results
+				$results=Organization::GetPage(
+					$page_num,
+					$num_per_page,
+					$order_by,
+					$active
+				);
+				
+				//	Generate output
+				$results_json=array();
+				foreach ($results as $x) {
+				
+					$arr=array();
+					$arr['organization']=$x->ToArray();
+					
+					$results_json[]=$arr;
+				
+				}
+			
+			}
 			
 			$api_result=array(
 				'page' => $page_num,
@@ -254,17 +323,23 @@
 		}
 		
 	
-	//	Number of users
+	//	Number of results
 	} else if ($api_request->type==='user_count') {
 	
 	
 		//	An API query request for the number of users
-		//	shall be as follows:
+		//	or organizations shall be as follows:
 		//
 		//	{
 		//		"action":	"query",
 		//		"api_key":	<API key of API consumer>,
-		//		"type":		"user_count"
+		//		"type":		"user_count"/"organization_count"
+		//		"active":	<Optional, may be set to true, false
+		//					 or null.  If true only active users
+		//					 or organizations will be counted, if
+		//					 false only inactive users or organizations
+		//					 will be counted.  If null all users
+		//					 or organizations will be counted.>
 		//	}
 		//
 		//	The response shall be:
@@ -275,9 +350,15 @@
 		
 		
 		$api_result=array(
-			'count' => User::GetCount()
+			'count' => User::GetCount($active)
 		);
 		
+	
+	} else if ($api_request->type==='organization_count') {
+	
+		$api_result=array(
+			'count' => Organization::GetCount($active)
+		);
 	
 	} else {
 	

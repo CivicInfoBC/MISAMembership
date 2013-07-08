@@ -1,0 +1,24 @@
+<?php	foreach ($this->results as $x):	?>
+
+<div>
+
+	<a href="<?php
+	
+		echo(
+			htmlspecialchars(
+				$request->MakeLink(
+					null,
+					$x->id
+				)
+			)
+		);
+	
+	?>">
+	
+		<?php	echo(htmlspecialchars($x->Name('L, F')));	?>
+		
+	</a>
+	
+</div>
+
+<?php	endforeach;	?>

@@ -277,8 +277,6 @@
 		
 			$link=$this->get_root();
 			
-			if (!is_null($this->leading_arg)) $link.=rawurlencode($this->leading_arg).'/';
-			
 			if (!is_null($controller)) $link.=rawurlencode($controller).'/';
 			
 			if (!is_null($args)) {

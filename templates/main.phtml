@@ -2,6 +2,8 @@
 
 	global $request;
 	global $header;
+	global $user;
+	global $title;
 
 ?><!doctype html>
 
@@ -12,6 +14,15 @@
 	<head>
 	
 		<meta http-equiv="content-type" content="application/xhmtl+xml; charset=UTF-8" />
+		
+		<title>
+		
+			MISA BC
+			<?php	if (!is_null($title)):	?>
+			- <?php	echo(htmlspecialchars($title));	?>
+			<?php	endif;	?>
+		
+		</title>
 		
 		<link rel="stylesheet" type="text/css" href="https://www.civicinfo.bc.ca/style/reset.css" />
 		<link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Open+Sans%3A300italic%2C400italic%2C400%2C300&ver=3.5.1" />
@@ -77,6 +88,10 @@
 		
 			<div id="banner">
 			
+				<?php	if (!is_null($user)):	?>
+				<div id="user_area">Hello, <?php	echo(htmlspecialchars($user->Name('F L')));	?></div>
+				<?php	endif;	?>
+			
 				<a href="http://devel.misa.bc.ca/"><img src="<?php
 				
 					echo(
@@ -111,10 +126,41 @@
 				Municipal Information Systems Association of BC
 			
 			</div>
+			
+			<?php	if (!is_null($user)):	?>
+			
+			<div id="top_nav"<?php	if (is_null($user->organization)):	?> class="four"<?php	endif;	?>>
+			
+				<a href="<?php	echo(htmlspecialchars($request->MakeLink()));	?>">My Profile</a>
+				<?php	if (!is_null($user->organization)):	?>
+				<a href="<?php
+				
+					echo(
+						htmlspecialchars(
+							$request->MakeLink(
+								'organization',
+								$user->organization->id
+							)
+						)
+					);
+				
+				?>">My Organization</a>
+				<?php	endif;	?>
+				<a href="<?php	echo(htmlspecialchars($request->MakeLink('users')));	?>">Users</a>
+				<a href="<?php	echo(htmlspecialchars($request->MakeLink('organizations')));	?>">Organizations</a>
+				<a href="<?php	echo(htmlspecialchars($request->MakeLink(null,null,array('logout' => TRUE_STRING))));	?>">Logout</a>
+			
+			</div>
+			
+			<?php	endif;	?>
 		
 		</div>
 		
 		<div id="main">
+		
+			<?php	if (!is_null($title)):	?>
+			<h1><?php	echo(htmlspecialchars($title));	?></h1>
+			<?php	endif;	?>
 		
 			<?php	$this->template->Render($this->file);	?>
 		

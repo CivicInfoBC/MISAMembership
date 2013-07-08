@@ -91,6 +91,18 @@
 	}
 	
 	
+	//	Title
+	$title=(
+		($user->id===$curr_user->id)
+			?	'My Profile'
+			:	(
+					$read_only
+						?	'View User'
+						:	'Edit User'
+				)
+	);
+	
+	
 	//	If we're just displaying the user
 	//	we have all the information we need
 	//	so dispatch to a template

@@ -49,23 +49,20 @@
 			global $dependencies;
 			$conn=$dependencies[PAID_DB];
 			
-			//	We want dues paid for this
-			//	calendar year
-			$year=new DateTime();	//	Right now
-			$year=$year->format('Y');	//	Four digit year
-			
 			$query=$conn->query(
 				sprintf(
 					'SELECT
 						*
 					FROM
-						`payment`
+						`payment`,
+						`membership_years`
 					WHERE
-						`org_id`=\'%s\' AND
-						`membership_year`=\'%s\' AND
-						`paid`=\'1\'',
-					$conn->real_escape_string($id),
-					$conn->real_escape_string($year)
+						`payment`.`membership_year_id`=`membership_years`.`id` AND
+						`payment`.`org_id`=\'%s\' AND
+						`membership_years`.`start`<=NOW() AND
+						`membership_years`.`end`>=NOW() AND
+						`payment`.`paid`=\'1\'',
+					$conn->real_escape_string($id)
 				)	
 			);
 			
@@ -247,6 +244,189 @@
 					$conn->real_escape_string($this->row['id'])
 				)
 			)===false) throw new Exception($conn->error);
+		
+		}
+		
+		
+		private static function get_inner_query ($active) {
+		
+			if (is_null($active)) return '`organizations`';
+			
+			if ($active) return '(
+				SELECT
+					`organizations`.*
+				FROM
+					`organizations`
+				WHERE
+					`organizations`.`enabled`<>0 AND
+					(
+						(
+							SELECT
+								COUNT(*)
+							FROM
+								`payment`,
+								`membership_years`
+							WHERE
+								`payment`.`paid`<>0 AND
+								`membership_years`.`id`=`payment`.`membership_year_id` AND
+								(
+									`payment`.`type`=\'membership renewal\' OR
+									`payment`.`type`=\'membership new\'
+								) AND
+								`organizations`.`id`=`payment`.`org_id` AND
+								`membership_years`.`start`<=NOW() AND
+								`membership_years`.`end`>=NOW()
+						)<>0 OR
+						`organizations`.`perpetual`<>0
+					)
+			) `subquery`';
+			
+			return '(
+				SELECT
+					`organizations`.*
+				FROM
+					`organizations`
+				WHERE
+					`organizations`.`enabled`=0 OR
+					(
+						(
+							SELECT
+								COUNT(*)
+							FROM
+								`payment`,
+								`membership_years`
+							WHERE
+								`payment`.`paid`<>0 AND
+								`membership_years`.`id`=`payment`.`membership_year_id` AND
+								(
+									`payment`.`type`=\'membership renewal\' OR
+									`payment`.`type`=\'membership new\'
+								) AND
+								`organizations`.`id`=`payment`.`org_id` AND
+								`membership_years`.`start`<=NOW() AND
+								`membership_years`.`end`>=NOW()
+						)=0 AND
+						`organizations`.`perpetual`=0
+					)
+			) `subquery`';
+		
+		}
+		
+		
+		/**
+		 *	Retrieves the number of organizations in the
+		 *	database.
+		 *
+		 *	\param [in] $active
+		 *		If \em null, all results shall be included
+		 *		in the result set.  If \em true only active
+		 *		organizations shall be included.  If \em false
+		 *		only inactive organizations shall be
+		 *		included.  Defaults to \em null.
+		 */
+		public static function GetCount ($active=null) {
+		
+			//	Get database access
+			global $dependencies;
+			$conn=$dependencies[ORG_DB];
+			
+			//	Execute query
+			$query=$conn->query(
+				sprintf(
+					'SELECT
+						COUNT(*)
+					FROM
+						%s',
+					self::get_inner_query($active)
+				)
+			);
+			
+			//	Throw on error
+			if ($query===false) throw new Exception($conn->error);
+			
+			//	Throw if there are no rows
+			if ($query->num_rows===0) throw new Exception('No rows');
+			
+			//	Extract row
+			$row=new MySQLRow($query);
+			
+			//	Return
+			return $row[0]->GetValue();
+		
+		}
+		
+		
+		/**
+		 *	Retrieves a page of organizations from the
+		 *	database.
+		 *
+		 *	\param [in] $page_num
+		 *		The number of the page to retrieve.
+		 *	\param [in] $num_per_page
+		 *		The maximum number of results to return
+		 *		on each page.
+		 *	\param [in] $order_by
+		 *		ORDER BY clauses which shall be used
+		 *		to determine how results are
+		 *		ordered.
+		 *	\param [in] $active
+		 *		If \em null, all results shall be
+		 *		included in the result set.  If
+		 *		\em true only active organizations
+		 *		shall be included.  If \em false
+		 *		only inactive organizations shall
+		 *		be included.  Defaults to \em null.
+		 *
+		 *	\return
+		 *		An enumerated array of Organization objects
+		 *		representing the requested page.
+		 */
+		public static function GetPage ($page_num, $num_per_page, $order_by, $active=null) {
+		
+			//	Get database access
+			global $dependencies;
+			$conn=$dependencies[ORG_DB];
+			
+			//	Get the organizations on this
+			//	page.
+			$query=$conn->query(
+				sprintf(
+					'SELECT
+						`id`
+					FROM
+						%s
+					%s
+					LIMIT %s,%s',
+					self::get_inner_query($active),
+					(
+						(isset($order_by) && ($order_by!==''))
+							?	'ORDER BY '.$order_by
+							:	''
+					),
+					intval(($page_num-1)*$num_per_page),
+					intval($num_per_page)
+				)
+			);
+			
+			//	Throw on error
+			if ($query===false) throw new Exception($conn->error);
+			
+			//	Prepare an array
+			$results=array();
+			
+			//	Short-circuit out if there are
+			//	no results
+			if ($query->num_rows===0) return $results;
+			
+			//	Loop over the results adding
+			//	them to the array to return
+			for (
+				$row=new MySQLRow($query);
+				!is_null($row);
+				$row=$row->Next()
+			) $results[]=self::GetByID($row['id']->GetValue());
+			
+			return $results;
 		
 		}
 		

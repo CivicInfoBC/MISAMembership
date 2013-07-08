@@ -1,0 +1,159 @@
+<?php
+
+	global $request;
+	
+	$nav_query_string=array();
+	$filter_query_string=array();
+	
+	if (!is_null($request->GetQueryString('results_per_page'))) {
+	
+		$nav_query_string['results_per_page']=$request->GetQueryString('results_per_page');
+		$filter_query_string['results_per_page']=$request->GetQueryString('results_per_page');
+		
+	}
+	if (!is_null($request->GetQueryString('active'))) $nav_query_string['active']=$request->GetQueryString('active');
+
+?>
+
+<div id="results">
+
+	<div>
+	
+		Displaying <?php
+		
+			echo(
+				htmlspecialchars(
+					(($this->page-1)*$this->per_page)+1
+				)
+			);
+		
+		?> - <?php
+		
+			$upper_bound=$this->page*$this->per_page;
+			
+			if ($upper_bound>$this->set_size) $upper_bound=$this->set_size;
+		
+			echo(htmlspecialchars($upper_bound));
+		
+		?> of <?php
+		
+			echo(
+				htmlspecialchars(
+					$this->set_size
+				)
+			);
+		
+		?>
+		
+	</div>
+	
+	<div>
+	
+		<script type="text/javascript">
+		
+			function display_onchange (element) {
+			
+				window.location=element.options[element.selectedIndex].value;
+			
+			}
+		
+		</script>
+	
+		Display<select onchange="display_onchange(this);">
+		
+			<option value="<?php
+			
+				echo(
+					htmlspecialchars(
+						$request->MakeLink(
+							$request->GetController(),
+							$this->page,
+							$filter_query_string	
+						)
+					)
+				);
+			
+			?>"<?php	if (is_null($this->active)):	?> selected<?php	endif;	?>>All</option>
+			
+			<option value="<?php
+			
+				echo(
+					htmlspecialchars(
+						$request->MakeLink(
+							$request->GetController(),
+							$this->page,
+							array_merge(
+								$filter_query_string,
+								array(
+									'active' => TRUE_STRING
+								)
+							)
+						)
+					)
+				);
+			
+			?>"<?php	if ($this->active):	?> selected<?php	endif;	?>>Active</option>
+			
+			<option value="<?php
+			
+				echo(
+					htmlspecialchars(
+						$request->MakeLink(
+							$request->GetController(),
+							$this->page,
+							array_merge(
+								$filter_query_string,
+								array(
+									'active' => FALSE_STRING
+								)
+							)
+						)
+					)
+				)
+			
+			?>"<?php	if ($this->active===false):	?> selected<?php	endif;	?>>Inactive</option>
+		
+		</select>
+	
+	</div>
+	
+	<div>
+	
+		<div class="nav_arrow">
+		
+			<?php	if ($this->page!==1):	?>
+			<a href="<?php	echo(htmlspecialchars($request->MakeLink($request->GetController(),$this->page-1,$nav_query_string)));	?>">&lt;</a>
+			<?php	else:	?>
+			&nbsp;
+			<?php	endif;	?>
+		
+		</div>
+	
+		Page<form method="GET" action="<?php
+		
+			echo(htmlspecialchars($request->MakeLink($request->GetController())));
+		
+		?>"><?php	foreach ($nav_query_string as $key=>$value):	?>
+		<input type="hidden" name="<?php	echo(htmlspecialchars($key));	?>" value="<?php	echo(htmlspecialchars($value));	?>" />
+		<?php	endforeach;	?>
+		<input type="text" name="page" value="<?php
+		
+			echo(htmlspecialchars($this->page));
+		
+		?>" /></form>of <?php	echo(htmlspecialchars($this->pages));	?>
+		
+		<div class="nav_arrow">
+		
+			<?php	if ($this->page!==$this->pages):	?>
+			<a href="<?php	echo(htmlspecialchars($request->MakeLink($request->GetController(),$this->page+1,$nav_query_string)));	?>">&gt;</a>
+			<?php	else:	?>
+			&nbsp;
+			<?php	endif;	?>
+		
+		</div>
+		
+	</div>
+	
+	<?php	require(WHERE_TEMPLATES.$this->inner_template);	?>
+
+</div>

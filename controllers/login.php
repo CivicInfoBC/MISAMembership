@@ -1,5 +1,6 @@
 <?php
 
+	$title='Login';
 
 	//	Render login page
 	

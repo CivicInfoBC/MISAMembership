@@ -105,10 +105,12 @@
 	def('WHERE_LOCAL_PHP_INCLUDES',WHERE_PHP_INCLUDES);
 	def('DEBUG',false);
 	def('TRUE_STRING','true');
+	def('FALSE_STRING','false');
 	def('LOGIN_KEY','login');
 	def('LOGOUT_KEY','logout');
 	def('PASSWORD_KEY','password');
 	def('USERNAME_KEY','username');
+	def('SESSION_KEY_KEY','session_key');	//	Key in the query string for cross-site login
 	
 	
 	//	Debugging settings
@@ -229,7 +231,36 @@
 				User::Logout();
 			
 			//	Attempt to regenerate a session
+			} else if (!is_null($request->GetQueryString(SESSION_KEY_KEY))) {
+			
+				//	Regenerate from a session key passed
+				//	in the query string
+				
+				$user=User::Resume($request->GetQueryString(SESSION_KEY_KEY));
+				
+				if ($user->code===0) {
+				
+					//	Login success
+					
+					$user=$user->user;
+					
+					//	Send cookie
+					User::SetCookie($request->GetQueryString(SESSION_KEY_KEY));
+				
+				} else {
+				
+					//	Login failure
+					//
+					//	Session-based logins fail
+					//	silently to avoid poor
+					//	user experience
+					$user=null;
+				
+				}
+				
 			} else {
+			
+				//	Regenerate from cookies
 			
 				$user=User::Resume();
 				

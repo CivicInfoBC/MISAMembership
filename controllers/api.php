@@ -137,7 +137,7 @@
 		
 	} catch (Exception $e) {
 	
-		if (DEBUG) api_error(HTTP_INTERNAL_SERVER_ERROR,$e->message);
+		if (DEBUG) api_error(HTTP_INTERNAL_SERVER_ERROR,$e->getMessage());
 		else api_error(HTTP_INTERNAL_SERVER_ERROR);
 	
 	}

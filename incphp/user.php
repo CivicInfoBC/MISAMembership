@@ -227,13 +227,109 @@
 		}
 		
 		
+		private static function get_inner_query ($active) {
+		
+			if (is_null($active)) return '`users`';
+			
+			if ($active) return '(
+				SELECT
+					`users`.*
+				FROM
+					`users`,
+					`organizations`
+				WHERE
+					`organizations`.`id`=`users`.`org_id` AND
+					`users`.`enabled`<>0 AND
+					`organizations`.`enabled`<>0 AND
+					(
+						(
+							SELECT
+								COUNT(*)
+							FROM
+								`payment`,
+								`membership_years`
+							WHERE
+								`payment`.`paid`<>0 AND
+								`membership_years`.`id`=`payment`.`membership_year_id` AND
+								(
+									`payment`.`type`=\'membership renewal\' OR
+									`payment`.`type`=\'membership new\'
+								) AND
+								`organizations`.`id`=`payment`.`org_id` AND
+								`membership_years`.`start`<=NOW() AND
+								`membership_years`.`end`>=NOW()
+						)<>0 OR
+						`organizations`.`perpetual`<>0
+					)
+				UNION
+				SELECT
+					*
+				FROM
+					`users`
+				WHERE
+					`users`.`org_id` IS NULL AND
+					`users`.`enabled`<>0
+			) `subquery`';
+			
+			return '(
+				SELECT
+					`users`.*
+				FROM
+					`users`,
+					`organizations`
+				WHERE
+					`organizations`.`id`=`users`.`org_id` AND
+					(
+						`users`.`enabled`=0 OR
+						`organizations`.`enabled`=0 OR
+						(
+							(
+								SELECT
+									COUNT(*)
+								FROM
+									`payment`,
+									`membership_years`
+								WHERE
+									`payment`.`paid`<>0 AND
+									`membership_years`.`id`=`payment`.`membership_year_id` AND
+									(
+										`payment`.`type`=\'membership renewal\' OR
+										`payment`.`type`=\'membership new\'
+									) AND
+									`organizations`.`id`=`payment`.`org_id` AND
+									`membership_years`.`start`<=NOW() AND
+									`membership_years`.`end`>=NOW()
+							)=0 AND
+							`organizations`.`perpetual`=0
+						)
+					)
+				UNION
+				SELECT
+					*
+				FROM
+					`users`
+				WHERE
+					`users`.`org_id` IS NULL AND
+					`users`.`enabled`=0
+			) `subquery`';
+		
+		}
+		
+		
 		/**
 		 *	Retrieves the number of users in the database.
+		 *
+		 *	\param [in] $active
+		 *		If \em null, all results shall be included
+		 *		in the result set.  If \em true only active
+		 *		users shall be included.  If \em false only
+		 *		inactive users shall be included.  Defaults
+		 *		to \em null.
 		 *
 		 *	\return
 		 *		The number of users in the database.
 		 */
-		public static function GetCount () {
+		public static function GetCount ($active=null) {
 		
 			//	Get database access
 			global $dependencies;
@@ -241,10 +337,13 @@
 			
 			//	Execute query
 			$query=$conn->query(
-				'SELECT
-					COUNT(*)
-				FROM
-					`users`'
+				sprintf(
+					'SELECT
+						COUNT(*)
+					FROM
+						%s',
+					self::get_inner_query($active)
+				)
 			);
 			
 			//	Throw on error
@@ -274,11 +373,18 @@
 		 *		ORDER BY clauses which shall be used
 		 *		to determine how the results are
 		 *		ordered.
+		 *	\param [in] $active
+		 *		If \em null, all results shall be included
+		 *		in the result set.  If \em true only active
+		 *		users shall be included.  If \em false only
+		 *		inactive users shall be included.  Defaults
+		 *		to \em null.
 		 *
 		 *	\return
-		 *		An enumerated array of results.
+		 *		An enumerated array of User objects representing
+		 *		the requested page.
 		 */
-		public static function GetPage ($page_num, $num_per_page, $order_by) {
+		public static function GetPage ($page_num, $num_per_page, $order_by, $active=null) {
 		
 			//	Get database access
 			global $dependencies;
@@ -291,9 +397,10 @@
 					'SELECT
 						`id`
 					FROM
-						`users`
+						%s
 					%s
 					LIMIT %s,%s',
+					self::get_inner_query($active),
 					(
 						(isset($order_by) && ($order_by!==''))
 							?	'ORDER BY '.$order_by
@@ -517,8 +624,30 @@
 			//	Throw on error
 			if ($query===false) throw new Exception($conn->error);
 			
-			//	Failure if there are no matching rows
-			if ($query->num_rows===0) return new LoginAttempt(1);
+			//	See if the username matches an e-mail
+			//	address if there are no matching rows
+			if ($query->num_rows===0) {
+			
+				$query=$conn->query(
+					sprintf(
+						'SELECT
+							*
+						FROM
+							`users`
+						WHERE
+							`email`=\'%s\'',
+						$conn->real_escape_string($username)
+					)
+				);
+				
+				//	Throw on error
+				if ($query===false) throw new Exception($conn->error);
+				
+				//	Fail out if there are no
+				//	matching rows
+				if ($query->num_rows===0) return new LoginAttempt(1);
+			
+			}
 			
 			//	Extract row
 			$row=new MySQLRow($query);
