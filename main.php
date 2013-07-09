@@ -1,6 +1,9 @@
 <?php
 
 
+	//	Shim to stop errors
+	if ($_SERVER['HTTP_X_ORIGINAL_URL']==='/favicon.ico') exit();
+
 
 	function Render ($inner_template, $file) {
 	
@@ -106,6 +109,7 @@
 	def('DEBUG',false);
 	def('TRUE_STRING','true');
 	def('FALSE_STRING','false');
+	def('ALL_STRING','all');
 	def('LOGIN_KEY','login');
 	def('LOGOUT_KEY','logout');
 	def('PASSWORD_KEY','password');

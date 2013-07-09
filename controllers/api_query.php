@@ -158,8 +158,8 @@
 			//	Attempt to get result by ID
 			$api_result=(
 				($api_request->type==='user')
-					?	User::GetByID($api_result->id)
-					:	Organization::GetByID($api_result->id)
+					?	User::GetByID($api_request->id)
+					:	Organization::GetByID($api_request->id)
 			);
 			
 			if (is_null($api_result)) {

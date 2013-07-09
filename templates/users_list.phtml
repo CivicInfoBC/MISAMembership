@@ -1,24 +1,64 @@
-<?php	foreach ($this->results as $x):	?>
+<table>
 
-<div>
-
-	<a href="<?php
+	<thead>
 	
-		echo(
-			htmlspecialchars(
-				$request->MakeLink(
-					null,
-					$x->id
-				)
-			)
-		);
+		<td>Last Name</td>
+		<td>First Name</td>
+		<td>Organization</td>
+		<td>Type</td>
 	
-	?>">
+	</thead>
 	
-		<?php	echo(htmlspecialchars($x->Name('L, F')));	?>
+	<tbody>
+	
+		<?php	foreach ($this->results as $x):	?>
 		
-	</a>
+		<tr>
+		
+			<?php	$link=htmlspecialchars($request->MakeLink(null,$x->id));	?>
+			
+			<td><a href="<?php	echo($link);	?>"><?php	echo(htmlspecialchars($x->Name('L')));	?></a></td>
+			
+			<td><a href="<?php	echo($link);	?>"><?php	echo(htmlspecialchars($x->Name('F')));	?></a></td>
+			
+			<td>
+			
+				<?php	if (is_null($x->organization)):	?>
+				&nbsp;
+				<?php	else:	?>
+				<?php	echo(htmlspecialchars($x->organization->name));	?>
+				<?php	endif;	?>
+			
+			</td>
+			
+			<td><?php
+			
+				switch ($x->type) {
+				
+					case 'user':
+					default:
+						
+						echo(htmlspecialchars('User'));
+						break;
+						
+					case 'superuser':
+					
+						echo(htmlspecialchars('Organization Admin'));
+						break;
+						
+					case 'admin':
+					
+						echo(htmlspecialchars('Sitewide Admin'));
+						break;
+				
+				}
+			
+			?></td>
+		
+		</tr>
+		
+		<?php	endforeach;	?>
 	
-</div>
+	</tbody>
 
-<?php	endforeach;	?>
+</table>

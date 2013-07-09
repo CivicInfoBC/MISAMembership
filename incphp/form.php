@@ -466,8 +466,10 @@
 		 *		form element (empty string if there
 		 *		is no such data).
 		 *	4.	The type of this input tag.
+		 *	5.	The CSS classes to associate with
+		 *		the input tag.
 		 */
-		public static $template='<div><div>%s:</div><div><input name="%s" value="%s" type="%s" /></div></div>';
+		public static $template='<div><div>%s:</div><div><input name="%s" value="%s" type="%s" class="%s" /></div></div>';
 		public static $verify_template='';
 		
 		
@@ -480,6 +482,11 @@
 		 *	The type of tag that shall be output.
 		 */
 		public $type;
+		/**
+		 *	The CSS classes the input element shall
+		 *	have.
+		 */
+		public $classes;
 		
 		
 		/**
@@ -504,13 +511,17 @@
 		 *		The type of input tag to output.
 		 *		Useful if you wish to output password
 		 *		inputs.  Defaults to \"text\".
+		 *	\param [in] $classes
+		 *		The CSS classes to attach to the generated
+		 *		input element.
 		 */
-		public function __construct ($key, $label, $regex, $value=null, $type='text') {
+		public function __construct ($key, $label, $regex, $value=null, $type='text', $classes=null) {
 		
 			parent::__construct($key,$regex,$value);
 			
 			$this->label=$label;
 			$this->type=$type;
+			$this->classes=$classes;
 		
 		}
 		
@@ -526,7 +537,8 @@
 						?	''
 						:	$this->value
 				),
-				htmlspecialchars($this->type)
+				htmlspecialchars($this->type),
+				htmlspecialchars($this->classes)
 			);
 		
 		}

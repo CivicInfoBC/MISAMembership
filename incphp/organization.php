@@ -3,6 +3,7 @@
 
 	require_once(WHERE_PHP_INCLUDES.'mysqli_result.php');
 	require_once(WHERE_PHP_INCLUDES.'define.php');
+	require_once(WHERE_LOCAL_PHP_INCLUDES.'user.php');
 
 
 	//	Database dependency to use for retrieving
@@ -425,6 +426,106 @@
 				!is_null($row);
 				$row=$row->Next()
 			) $results[]=self::GetByID($row['id']->GetValue());
+			
+			return $results;
+		
+		}
+		
+		
+		/**
+		 *	Retrieves all payment information for this
+		 *	organization from the database.
+		 *
+		 *	\return
+		 *		An array of MySQLRow objects representing
+		 *		the payment history for this organization.
+		 */
+		public function PaymentHistory () {
+		
+			//	Database access
+			global $dependencies;
+			$conn=$dependencies[ORG_DB];
+			
+			//	Get rows
+			$query=$conn->query(
+				sprintf(
+					'SELECT
+						*
+					FROM
+						`payment`
+					WHERE
+						`org_id`=\'%s\' AND
+						(
+							`type`=\'membership renewal\' OR
+							`type`=\'membership new\'
+						)
+					ORDER BY
+						`created` DESC',
+					$conn->real_escape_string($this->id)
+				)
+			);
+		
+			//	Throw on error
+			if ($query===false) throw new Exception($conn->error);
+			
+			//	Prepare result set
+			$results=array();
+			
+			//	Short-circuit out if there are
+			//	no rows
+			if ($query->num_rows===0) return $results;
+			
+			//	Get all rows
+			for (
+				$row=new MySQLRow($query);
+				!is_null($row);
+				$row=$row->Next()
+			) $results[]=$row;
+			
+			return $results;
+		
+		}
+		
+		
+		public function GetUsers () {
+		
+			//	Database access
+			global $dependencies;
+			$conn=$dependencies[ORG_DB];
+			
+			//	Get IDs of all users in
+			//	this organization
+			$query=$conn->query(
+				sprintf(
+					'SELECT
+						`id`
+					FROM
+						`users`
+					WHERE
+						`org_id`=\'%s\'
+					ORDER BY
+						`last_name` ASC,
+						`first_name` ASC',
+					$conn->real_escape_string($this->id)
+				)
+			);
+			
+			//	Throw on error
+			if ($query===false) throw new Exception($conn->error);
+			
+			//	Prepare result set
+			$results=array();
+			
+			//	Short-circuit out if there are no
+			//	rows
+			if ($query->num_rows===0) return $result;
+			
+			//	Get all rows
+			for (
+				$row=new MySQLRow($query);
+				!is_null($row);
+				$row=$row->Next()
+			) $results[]=User::GetByID($row['id']->GetValue());
 			
 			return $results;
 		

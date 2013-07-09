@@ -5,7 +5,10 @@
 
 	//	Active, inactive?
 	$active=$request->GetQueryString('active');
-	if (!is_null($active)) $active=$active===TRUE_STRING;
+	$active=$request->GetQueryString('active');
+	if (is_null($active)) $active=true;
+	else if ($active===ALL_STRING) $active=null;
+	else $active=$active===TRUE_STRING;
 
 	//	Get the count
 	$count=User::GetCount($active);

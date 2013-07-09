@@ -301,9 +301,15 @@ select + input[type="text"] {
 }
 
 
-#main > form input[type="text"], form input[type="password"], form select {
+form select {
 
 	width: 250px;
+
+}
+
+#main > form input[type="text"].wide {
+
+	width: 300px;
 
 }
 
@@ -366,14 +372,11 @@ form > p {
 
 #results > *:first-child,
 #results > *:nth-child(2),
-#results > *:nth-child(3) {
+#results > *:nth-child(3),
+#results > *:nth-last-child(1),
+#results > *:nth-last-child(2) {
 
 	font-weight: bold;
-
-}
-
-#results > div {
-
 	text-align: center;
 
 }
@@ -431,5 +434,34 @@ form > p {
 
 	margin-left: 0px;
 	margin-right: 15px;
+
+}
+
+
+table {
+
+	width: 100%;
+
+}
+
+
+table td {
+
+	border: 1px black solid;
+	padding: 3px;
+
+}
+
+
+table thead {
+
+	font-weight: bold;
+
+}
+
+
+table a {
+
+	text-decoration: inherit;
 
 }

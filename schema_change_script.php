@@ -593,7 +593,7 @@
 	//	were new
 	$query=$old_conn->query(
 		'SELECT
-			`id`,
+			`organizationsId`,
 			`membershipYear`
 		FROM
 			`transactions`
@@ -605,7 +605,7 @@
 	
 	$year_new=array();
 	
-	while (!is_null($row=$query->fetch_assoc())) $year_new[$row['id']]=$row['membershipYear'];
+	while (!is_null($row=$query->fetch_assoc())) $year_new[$row['organizationsId']]=$row['membershipYear'];
 	
 	//	Get payment information
 	$query=$old_conn->query(
@@ -639,7 +639,11 @@
 			`organizations`
 		WHERE
 			`transactions`.`appliesto`=\'membership\' AND
-			`organizations`.`id`=`transactions`.`organizationsId`'
+			`organizations`.`id`=`transactions`.`organizationsId` AND
+			NOT (
+				`membershiptypes`.`id` IS NULL AND
+				`transactions`.`amount`=\'0.00\'
+			)'
 	);
 	
 	if ($query===false) die($old_conn->error);
@@ -748,7 +752,9 @@
 					`paid`,
 					`org_id`,
 					`datepaid`,
-					`membership_type_id`
+					`membership_type_id`,
+					`amountpaid`,
+					`notes`
 				) VALUES (
 					\'%1$s\',
 					\'%2$s\',
@@ -759,7 +765,9 @@
 					\'1\',
 					\'%5$s\',
 					\'%3$s\',
-					%6$s
+					%6$s,
+					\'%4$s\',
+					%7$s
 				)',
 				$new_conn->real_escape_string($years[$row['membershipYear']]),
 				(
@@ -773,7 +781,8 @@
 				$new_conn->real_escape_string($row['entryDateTime']),
 				$new_conn->real_escape_string($row['amount']),
 				$new_conn->real_escape_string($org_id),
-				is_null($membership_type) ? 'NULL' : '\''.$new_conn->real_escape_string($membership_type).'\''
+				is_null($membership_type) ? 'NULL' : '\''.$new_conn->real_escape_string($membership_type).'\'',
+				(is_null($row['comments']) || ($row['comments']==='')) ? 'NULL' : '\''.$new_conn->real_escape_string($row['comments']).'\''
 			)
 		)===false) die($new_conn->error);
 	

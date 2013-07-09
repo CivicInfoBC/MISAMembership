@@ -187,13 +187,17 @@
 				'address',
 				'Address',
 				'^.+$',	//	Non-optional
-				$curr_user->address
+				$curr_user->address,
+				'text',
+				'wide'
 			),
 			new TextFormElement(
 				'address2',
 				'Address (Continued)',
 				'',	//	Optional
-				$curr_user->address2
+				$curr_user->address2,
+				'text',
+				'wide'
 			),
 			new TextFormElement(
 				'city',

@@ -15,6 +15,16 @@
 
 ?>
 
+<script type="text/javascript">
+
+	function display_onchange (element) {
+	
+		window.location=element.options[element.selectedIndex].value;
+	
+	}
+
+</script>
+
 <div id="results">
 
 	<div>
@@ -47,17 +57,9 @@
 		
 	</div>
 	
-	<div>
+	<?php	ob_start();	?>
 	
-		<script type="text/javascript">
-		
-			function display_onchange (element) {
-			
-				window.location=element.options[element.selectedIndex].value;
-			
-			}
-		
-		</script>
+	<div>
 	
 		Display<select onchange="display_onchange(this);">
 		
@@ -68,7 +70,12 @@
 						$request->MakeLink(
 							$request->GetController(),
 							$this->page,
-							$filter_query_string	
+							array_merge(
+								$filter_query_string,
+								array(
+									'active' => ALL_STRING
+								)
+							)
 						)
 					)
 				);
@@ -117,6 +124,15 @@
 	
 	</div>
 	
+	<?php
+	
+		$display_nav=ob_get_contents();
+		ob_end_flush();
+		
+		ob_start();
+	
+	?>
+	
 	<div>
 	
 		<div class="nav_arrow">
@@ -154,6 +170,20 @@
 		
 	</div>
 	
+	<?php
+	
+		$page_nav=ob_get_contents();
+		ob_end_flush();
+		
+	?>
+	
 	<?php	require(WHERE_TEMPLATES.$this->inner_template);	?>
-
+	
+	<?php
+	
+		echo($page_nav);
+		echo($display_nav);
+		
+	?>
+	
 </div>

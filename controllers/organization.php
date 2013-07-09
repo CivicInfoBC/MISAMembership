@@ -92,13 +92,17 @@
 				'address1',
 				'Address',
 				'^.+$',	//	Non-optional
-				$org->address1
+				$org->address1,
+				'text',
+				'wide'
 			),
 			new TextFormElement(
 				'address2',
 				'Address (Continued)',
 				'',	//	Optional
-				$org->address2
+				$org->address2,
+				'text',
+				'wide'
 			),
 			new TextFormElement(
 				'city',
@@ -335,6 +339,10 @@
 		
 		$template=new Template(WHERE_TEMPLATES);
 		$template->form=$form;
+		//	Get payment information
+		$template->payment_info=$org->PaymentHistory();
+		//	Get users attached to this organization
+		$template->users=$org->GetUsers();
 		
 		
 		Render($template,'user_organization_form.phtml');

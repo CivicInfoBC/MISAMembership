@@ -1,24 +1,41 @@
-<?php	foreach ($this->results as $x):	?>
+<table>
 
-<div>
-
-	<a href="<?php
+	<thead>
 	
-		echo(
-			htmlspecialchars(
-				$request->MakeLink(
-					'organization',
-					$x->id
-				)
-			)
-		);
+		<tr>
+		
+			<td>Name</td>
+			<td>City</td>
+			<td>Province/State</td>
+			<td>Country</td>
+			<td>Type</td>
+		
+		</tr>
+		
+	</thead>
 	
-	?>">
+	<tbody>
 	
-		<?php	echo(htmlspecialchars($x->name));	?>
+		<?php	foreach ($this->results as $x):	?>
+		
+		<tr>
+		
+			<?php	$link=htmlspecialchars($request->MakeLink('organization',$x->id));	?>
+		
+			<td><a href="<?php	echo($link);	?>"><?php	echo(htmlspecialchars($x->name));	?></a></td>
+			
+			<td><?php	echo(htmlspecialchars($x->city));	?></td>
+			
+			<td><?php	echo(htmlspecialchars($x->territorial_unit));	?></td>
+			
+			<td><?php	echo(htmlspecialchars($x->country));	?></td>
+			
+			<td><?php	echo(htmlspecialchars($x->membership_type));	?></td>
+		
+		</tr>
+		
+		<?php	endforeach;	?>
 	
-	</a>
-
-</div>
-
-<?php	endforeach;	?>
+	</tbody>
+	
+</table>
