@@ -112,7 +112,7 @@
 			);
 			
 			//	Verify recognized request
-			if (in_array(
+			if (!in_array(
 				$api_request->action,
 				array_keys($api_routes),
 				true

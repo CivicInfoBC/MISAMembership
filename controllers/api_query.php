@@ -1,121 +1,119 @@
 <?php
 
 
-	def('DEFAULT_PER_PAGE',10);
-	def('DEFAULT_PAGE',1);
+	//	Handles selecting the appropriate query
+	//	for the request-in-question
+	function get_query () {
 	
+		global $api_request;
 	
-	//	Abstracts away "order_by" handling.
-	function flatten_order_by ($order_by) {
-	
-		//	Sanity checks
-		if (!(
-			is_object($order_by) &&
-			isset($order_by->column) &&
-			(
-				!isset($order_by->asc) ||
-				is_bool($order_by->asc)
-			)
-		)) api_error(HTTP_BAD_REQUEST);
+		if (isset($api_request->query)) {
 		
-		//	Prepare ORDER BY clause
-		return '`'.preg_replace(
-			'/`/u',
-			'``',
-			$order_by->column
-		).'` '.(
-			(
-				isset($order_by->asc) &&
-				!$order_by->asc
-			)
-				?	'DESC'
-				:	'ASC'
-		);
+			$users=($api_request->type==='users') || ($api_request->type==='user_count');
+		
+			//	A specific query was specified
+			if ($api_request->query==='active') {
+			
+				$query=$users ? User::GetActiveQuery() : Organization::GetActiveQuery();
+			
+			} else if ($api_request->query==='inactive') {
+			
+				$query=$users ? User::GetInactiveQuery() : Organization::GetInactiveQuery();
+			
+			} else if (
+				!$users &&
+				($api_request->query==='pending')
+			) {
+			
+				$query=Organization::GetPendingQuery();
+			
+			} else if ($api_request->query==='keyword') {
+			
+				if (!isset($api_request->keywords)) api_error(HTTP_BAD_REQUEST);
+				
+				if (is_string($api_request->keywords)) {
+				
+					$keywords=preg_split(
+						'/\\s+/u',
+						$api_request->keywords
+					);
+				
+				} else if (is_array($api_request->keywords)) {
+				
+					$keywords=$api_request->keywords;
+				
+				} else {
+				
+					api_error(HTTP_BAD_REQUEST);
+				
+				}
+				
+				$query=$users ? User::GetKeywordQuery($keywords) : Organization::GetKeywordQuery($keywords);
+			
+			} else {
+			
+				api_error(HTTP_BAD_REQUEST);
+			
+			}
+		
+		} else {
+		
+			//	No query was specified, default
+			//	to all results
+			
+			$query=$users ? User::GetAllQuery() : Organization::GetAllQuery();
+		
+		}
+		
+		return $query;
 	
 	}
 
 
-	//	An API query request may be made for either users
-	//	or organizations.
+	//	An API query may be made for one of six things:
 	//
+	//	1.	A particular organization.
+	//	2.	A particular user.
+	//	3.	A set of organizations.
+	//	4.	A set of users.
+	//	5.	The number of organizations in a particular
+	//		result set.
+	//	6.	The number of users in a particular result
+	//		set.
 	//
-	//	An API query request is at least:
+	//	A query is at least:
 	//
 	//	{
-	//		"action":	"query"
+	//		"action":	"query",
 	//		"api_key":	<API key of API consumer>,
-	//		"type":		<type of query to perform>
+	//		"type":		"user"/"organization"/"users"/"organizations"/"user_count"/"organization_count"
 	//	}
 	
 	
-	//	Make sure the "type" property
-	//	is set
+	//	Ensure the "type" property is present
 	if (!isset($api_request->type)) api_error(HTTP_BAD_REQUEST);
-
-	
-	//	Sanity checks on the "active"
-	//	property, and turn its absence
-	//	into something meaningful
-	if (isset($api_request->active)) {
-	
-		if (!is_bool($api_request->active)) api_error(HTTP_BAD_REQUEST);
-		
-		$active=$api_request->active;
-	
-	} else {
-	
-		$active=null;
-	
-	}
 	
 	
-	//	Get the query we'll be using
-	$query=(
-		(
-			($api_request->type==='user') ||
-			($api_request->type==='user_count')
-		)
-			?	(
-					is_null($active)
-						?	User::GetAllQuery()
-						:	(
-								$active
-									?	User::GetActiveQuery()
-									:	User::GetInactiveQuery()
-							)
-				)
-			:	(
-					is_null($active)
-						?	Organization::GetAllQuery()
-						:	(
-								$active
-									?	Organization::GetActiveQuery()
-									:	Organization::GetInactiveQuery()
-							)
-				)
-	);
+	//	Branch
 	
-	
+	//	Query for a single user or organization
 	if (
-		($api_request->type==='user') ||
-		($api_request->type==='organization')
+		($api_request->type==='organization') ||
+		($api_request->type==='user')
 	) {
 	
-		
-		//	An API query request for users or organizations shall
-		//	be as follows:
+		//	An API query may be made for a particular user
+		//	or organization by setting the "id" property to
+		//	the numerical ID of the user or organization
+		//	to retrieve.
 		//
+		//	An API query may be made for a particular user
+		//	by setting the "username" property to the username
+		//	or e-mail of the user to retrieve.
 		//
-		//	To query information for a specific user:
+		//	The response shall be:
 		//
-		//	{
-		//		"action":	"query",
-		//		"api_key":	<API key of API consumer>,
-		//		"type":		"user"/"organization",
-		//		"id":		<numerical ID of user>
-		//	}
-		//
-		//	The response for users shall be:
+		//	For users:
 		//
 		//	{
 		//		"exists":		<true if the user exists and the preceding
@@ -126,270 +124,259 @@
 		//						 not a member of any organization
 		//	}
 		//
-		//	The response for organizations shall be:
+		//	For organizations:
 		//
 		//	{
 		//		"exists":		<true if the organization exists and the preceding
 		//						 fields should be regarded, false otherwise>
 		//		"organization":	<an object representing the organization>
 		//	}
-		//
-		//
-		//	To obtain bulk user/organization information:
-		//
-		//	{
-		//		"action":	"query",
-		//		"api_key":	<API key of API consumer>,
-		//		"type":		"user"/"organization",
-		//		"page":		<page of results to show>,
-		//		"per_page":	<number of results per page>,
-		//		"order_by":	[
-		//						{
-		//							"column":	<column to order by>,
-		//							"asc":		<
-		//											true for ascending sort,
-		//											false for descending sort,
-		//											if omitted ascending is assumed
-		//										>
-		//						},
-		//						...repeat as needed...
-		//					]
-		//		"active":	<Optional, may be set to true, false
-		//					 or null.  If true only active users
-		//					 or organizations will be counted, if
-		//					 false only inactive users or organizations
-		//					 will be counted.  If null all users
-		//					 or organizations will be counted.>
-		//	}
-		//
-		//	The response shall be:
-		//
-		//	{
-		//		"page":			<the page actually being delivered>
-		//		"count":		<the number of users>
-		//		"num_pages":	<the total number of pages>
-		//		"per_page":		<number of results per page,
-		//						 not necessary the number of results
-		//						 in "results">
-		//		"results":[
-		//			{
-		//				"user":			...
-		//				"organization":	...
-		//			}
-		//			...repeat up to the number of results per page...
-		//		]
-		//	}
 		
-		
-		//	Handle single query
 		if (isset($api_request->id)) {
 		
-			//	Sanity check on the ID
 			if (!is_integer($api_request->id)) api_error(HTTP_BAD_REQUEST);
 			
-			//	Attempt to get result by ID
-			$api_result=(
-				($api_request->type==='user')
-					?	User::GetByID($api_request->id)
-					:	Organization::GetByID($api_request->id)
-			);
+			$api_result=($api_request->type==='user') ? User::GetByID($api_request->id) : Organization::GetByID($api_request->id);
+		
+		} else if (
+			isset($api_request->username) &&
+			is_string($api_request->username) &&
+			($api_request->type==='user')
+		) {
+		
+			$api_result=User::GetByUsername($api_request->username);
+		
+		} else {
+		
+			api_error(HTTP_BAD_REQUEST);
+		
+		}
+		
+		//	Does not exist
+		if (is_null($api_result)) {
+		
+			$api_result=array('exists' => false);
+		
+		//	Exists
+		} else {
+		
+			$api_result=($api_request->type==='user') ? $api_result->ToArray() : array('organization' => $api_result->ToArray());
 			
-			if (is_null($api_result)) {
+			$api_result['exists']=true;
 			
-				//	Does not exist
+		}
+		
+	//	An API query involving a result set -- i.e. for
+	//	a number of results or for the number of results
+	//	in a given result set -- may be made with the
+	//	following base:
+	//
+	//	{
+	//		"action":	"query",
+	//		"api_key":	<API key of API consumer>,
+	//		"type":		"users"/"organizations"/"user_count"/"organization_count"
+	//	}
+	//	
+	//	And the following optional segments merged into the
+	//	base to refine the results to be retrieved/counted.
+	//
+	//	To paginate the results:
+	//
+	//	{
+	//		"page":		<An integer given the page number, if
+	//					 greater than the number of pages, it
+	//					 will be changed to the number of the
+	//					 last page>
+	//		"per_page":	<OPTIONAL.  The number of results per
+	//					 page, if ommitted defaults to 10>
+	//	}
+	//
+	//	To specify a certain result set:
+	//
+	//	{
+	//		"query":	"active"/"inactive"/"pending"/"keyword"
+	//	}
+	//
+	//	"pending" is applicable to organizations only.
+	//
+	//	For the "keyword" query, the "keywords" property must
+	//	be set.  It can either be a string with whitespace-delimited
+	//	keywords, or an array of keywords (which will not be
+	//	recursively processed to break them up based on whitespace).
+	//
+	//	The response for count queries will be:
+	//
+	//	{
+	//		"count":	<The number of results in the set specified>
+	//	}
+	//
+	//	For requests for results:
+	//
+	//	{
+	//		"results":	<An array of result objects of the appropriate
+	//					 type>
+	//	}
+	//
+	//	the following fields will be added for paginated replies:
+	//
+	//	{
+	//		"page":		<The actual page number retrieved>
+	//		"per_page":	<The actual number of results per page>
+	//		"count":	<The totas number of results in the result set>
+	//		"pages":	<The total number of pages in the result set>
+	//	}
+	
+	//	Query for a number of results
+	} else if (
+		($api_request->type==='users') ||
+		($api_request->type==='organizations')
+	) {
+	
+		//	Determine which query to use
+		$query=get_query();
+		
+		//	Generate an ORDER BY string if appropriate
+		$order_by=null;
+		if (isset($api_request->order_by)) {
+		
+			if (!is_array($api_request->order_by)) $api_request->order_by=array($api_request->order_by);
 			
-				$api_result=array(
-					'exists' => false
-				);
+			if (count($api_request->order_by)!==0) {
 			
-			} else {
-			
-				//	Exists
+				$order_by='';
 				
-				if ($api_request->type==='user') {
+				foreach ($api_request->order_by as $x) {
 				
-					$api_result=$api_result->ToArray();
+					//	Default sort order is ascending
+					$direction='ASC';
 				
-				} else {
-				
-					$arr=array();
-					$arr['organization']=$api_result->ToArray();
-					$api_result=$arr;
+					if (is_object($x)) {
+					
+						if (!isset($x->column)) api_error(HTTP_BAD_REQUEST);
+						
+						if (isset($x->asc)) {
+						
+							if (!is_bool($x->asc)) api_error(HTTP_BAD_REQUEST);
+							
+							if (!$x->asc) $direction='DESC';
+						
+						}
+						
+						$column=$x->column;
+					
+					} else if (is_string($x)) {
+					
+						$column=$x;
+					
+					} else {
+					
+						api_error(HTTP_BAD_REQUEST);
+					
+					}
+					
+					if ($order_by!=='') $order_by.=',';
+					
+					$order_by.='`'.preg_replace(
+						'/`/u',
+						'``',
+						$column
+					).'` '.$direction;
 				
 				}
 				
-				$api_result['exists']=true;
-			
 			}
 		
-		//	Handle paginated query
-		} else {
+		}
 		
-			//	Get page number or set to
-			//	default
-			if (isset($api_request->page)) {
+		//	Handle pagination if necessary
+		$page_num=null;
+		$num_per_page=null;
+		$num_pages=null;
+		$count=null;		
+		if (isset($api_request->page)) {
+		
+			if (!is_integer($api_request->page)) api_error(HTTP_BAD_REQUEST);
 			
-				//	Sanity check
-				if (
-					!is_integer($api_request->page) ||
-					($api_request->page<=0)
-				) api_error(HTTP_BAD_REQUEST);
-				
-				$page_num=$api_request->page;
+			$page_num=$api_request->page;
 			
-			} else {
-			
-				$page_num=DEFAULT_PAGE;
-			
-			}
-			
-			//	Get number of results per
-			//	page or set to default
 			if (isset($api_request->per_page)) {
 			
-				//	Sanity check
-				if (
-					!is_integer($api_request->per_page) ||
-					($api_request->per_page<=0)
-				) api_error(HTTP_BAD_REQUEST);
+				if (!(
+					is_integer($api_request->per_page) &&
+					($api_request->per_page>0)
+				)) api_error(HTTP_BAD_REQUEST);
 				
 				$num_per_page=$api_request->per_page;
 			
 			} else {
 			
-				$num_per_page=DEFAULT_PER_PAGE;
+				$num_per_page=10;
 			
 			}
 			
-			//	Sanity check the "order_by" property
-			if (
-				isset($api_request->order_by) &&
-				!is_array($api_request->order_by)
-			) api_error(HTTP_BAD_REQUEST);
+			$count=($api_request->type==='users') ? User::GetCount($query) : Organization::GetCount($query);
 			
-			//	Get the number of results
-			$count=($api_request->type==='user') ? User::GetCount($query) : Organization::GetCount($query);
-			
-			//	Determine the number of pages
-			//	of results
 			$num_pages=intval($count/$num_per_page);
-			//	Add one if the last page
-			//	would contain less than
-			//	$num_per_page results (due
-			//	to integer division truncating
-			//	remainder)
 			if (($count%$num_per_page)!==0) ++$num_pages;
-			//	Are there no pages?
-			//
-			//	That wouldn't make sense, set
-			//	it to 1
-			if ($num_pages===0) $num_pages=1;
 			
-			//	Did the user request a page that's
-			//	out of range?
-			//
-			//	If so, give them the last page
 			if ($page_num>$num_pages) $page_num=$num_pages;
-			
-			//	Prepare ORDER BY clause
-			$order_by='';
-			$first=true;
-			if (isset($api_request->order_by)) {
-
-				foreach ($api_request->order_by as $obj) {
-				
-					if ($first) $first=false;
-					else $order_by.=',';
-					
-					$order_by.=flatten_order_by($obj);
-				
-				}
-				
-			}
-			
-			if ($api_request->type==='user') {
-			
-				//	Retrieve results
-				$results=User::GetPage(
-					$page_num,
-					$num_per_page,
-					$order_by,
-					$query
-				);
-				
-				//	Generate output
-				$results_json=array();
-				foreach ($results as $x) $results_json[]=$x->ToArray();
-			
-			} else {
-			
-				//	Retrieve results
-				$results=Organization::GetPage(
-					$page_num,
-					$num_per_page,
-					$order_by,
-					$query
-				);
-				
-				//	Generate output
-				$results_json=array();
-				foreach ($results as $x) {
-				
-					$arr=array();
-					$arr['organization']=$x->ToArray();
-					
-					$results_json[]=$arr;
-				
-				}
-			
-			}
-			
-			$api_result=array(
-				'page' => $page_num,
-				'num_pages' => $num_pages,
-				'count' => $count,
-				'per_page' => $num_per_page,
-				'results' => $results_json
-			);
 		
 		}
 		
-	
-	//	Number of results
-	} else if ($api_request->type==='user_count') {
-	
-	
-		//	An API query request for the number of users
-		//	or organizations shall be as follows:
-		//
-		//	{
-		//		"action":	"query",
-		//		"api_key":	<API key of API consumer>,
-		//		"type":		"user_count"/"organization_count"
-		//		"active":	<Optional, may be set to true, false
-		//					 or null.  If true only active users
-		//					 or organizations will be counted, if
-		//					 false only inactive users or organizations
-		//					 will be counted.  If null all users
-		//					 or organizations will be counted.>
-		//	}
-		//
-		//	The response shall be:
-		//
-		//	{
-		//		"count":	<the number of users in the database>
-		//	}
+		//	Perform query
+		if ($api_request->type==='users') {
 		
+			//	Users
+			
+			$db_results=User::GetPage(
+				$page_num,
+				$num_per_page,
+				$order_by,
+				$query
+			);
+			
+			$results=array();
+			foreach ($db_results as $x) $results[]=$x->ToArray();
+		
+		} else {
+		
+			//	Organizations
+			
+			$db_results=Organization::GetPage(
+				$page_num,
+				$num_per_page,
+				$order_by,
+				$query
+			);
+			
+			$results=array();
+			foreach ($db_results as $x) $results[]=array('organization' => $x->ToArray());
+		
+		}
 		
 		$api_result=array(
-			'count' => User::GetCount($query)
+			'results' => $results
 		);
 		
+		if (!is_null($page_num)) {
+		
+			$api_result['page']=$page_num;
+			$api_result['pages']=$num_pages;
+			$api_result['count']=$count;
+			$api_result['per_page']=$num_per_page;
+		
+		}
+		
+	} else if ($api_request->type==='user_count') {
+	
+		$api_result=array(
+			'count' => User::GetCount(get_query())
+		);
 	
 	} else if ($api_request->type==='organization_count') {
 	
 		$api_result=array(
-			'count' => Organization::GetCount($query)
+			'count' => Organization::GetCount(get_query())
 		);
 	
 	} else {
