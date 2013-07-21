@@ -62,12 +62,16 @@
 	);
 	
 	
+	//	Template and shared info
+	$template=new Template(WHERE_TEMPLATES);
+	//	Get users attached to this organization
+	$template->users=$org->GetUsers();
+	
+	
 	//	IF we're just displaying the organizational
 	//	information we have all the information we
 	//	need to dispatch to a template
 	if ($read_only) {
-	
-		$template=new Template(WHERE_TEMPLATES);
 		
 		$template->org=$org;
 		$template->type=Organization::GetType($org->membership_type_id);
@@ -251,11 +255,7 @@
 		
 		
 		//	Was this request a POST?
-		if (
-			($_SERVER['REQUEST_METHOD']==='POST') &&
-			($_SERVER['CONTENT_TYPE']==='application/x-www-form-urlencoded') &&
-			($request->GetQueryString(LOGIN_KEY)!==TRUE_STRING)
-		) {
+		if (is_post()) {
 		
 			//	Populate
 			$form->Populate();
@@ -290,44 +290,9 @@
 			
 			//	Process Country/Province/State
 			//	drop-down's values
-			
-			$terr_unit=$arr['territorial_unit'];
-			unset($arr['territorial_unit']);
-			
-			//	Is it a drop-down option?
-			if (in_array(
-				$terr_unit,
-				array_keys(ProvinceFormElement::$options),
-				true
-			)) {
-			
-				$terr_unit=ProvinceFormElement::$options[$terr_unit];
-				
-				//	Check for the hyphen
-				if (preg_match(
-					'/(.+) \\- (.+)/u',
-					$terr_unit,
-					$matches
-				)===0) {
-				
-					//	It's just a country
-					$arr['country']=$terr_unit;
-					$arr['territorial_unit']=null;
-				
-				} else {
-				
-					$arr['country']=$matches[1];
-					$arr['territorial_unit']=$matches[2];
-				
-				}
-			
-			} else {
-			
-				//	Just assume it's a country
-				$arr['country']=$terr_unit;
-				$arr['territorial_unit']=null;
-			
-			}
+			$obj=ProvinceFormElement::Split($arr['territorial_unit']);
+			$arr['territorial_unit']=$obj->territorial_unit;
+			$arr['country']=$obj->country;
 			
 			//	Save the information to the
 			//	database
@@ -337,15 +302,19 @@
 		}
 		
 		
-		$template=new Template(WHERE_TEMPLATES);
 		$template->form=$form;
 		//	Get payment information
 		$template->payment_info=$org->PaymentHistory();
-		//	Get users attached to this organization
-		$template->users=$org->GetUsers();
 		
 		
-		Render($template,'user_organization_form.phtml');
+		Render(
+			$template,
+			array(
+				'form.phtml',
+				'org_users.phtml',
+				'payment_info.phtml'
+			)
+		);
 	
 	}
 	

@@ -68,6 +68,20 @@
 		$header[]=$element;
 	
 	}
+	
+	
+	function is_post () {
+	
+		global $request;
+	
+		return (
+			($_SERVER['REQUEST_METHOD']==='POST') &&
+			($_SERVER['CONTENT_TYPE']==='application/x-www-form-urlencoded') &&
+			($request->GetQueryString(LOGIN_KEY)!==TRUE_STRING) &&
+			isset($_POST)
+		);
+	
+	}
 
 
 	//	Load configuration
@@ -104,6 +118,7 @@
 	def('LOGIN_CONTROLLER','login.php');	//	Users who aren't logged in can only login
 	def('DEFAULT_CONTROLLER','');	//	TDB
 	def('API_CONTROLLER','api.php');	//	Controller for API functions
+	def('PAYMENT_CONTROLLER','payment.php');	//	Controller for paying membership dues
 	def('API_ARG','api');	//	Handled during pre-routing so API calls don't get GUI login functionality
 	def('WHERE_LOCAL_PHP_INCLUDES',WHERE_PHP_INCLUDES);
 	def('DEBUG',false);
@@ -131,7 +146,7 @@
 	require_once(WHERE_PHP_INCLUDES.'mb.php');						//	Multi-byte string handling
 	require_once(WHERE_PHP_INCLUDES.'template.php');				//	Templating engine
 	require_once(WHERE_PHP_INCLUDES.'dependency_container.php');	//	Dependency handling/resolution
-	require_once(WHERE_LOCAL_PHP_INCLUDES.'request.php');			//	Request/sit abstraction/encapsulation
+	require_once(WHERE_LOCAL_PHP_INCLUDES.'request.php');			//	Request abstraction/encapsulation
 	require_once(SITE_ROOT.'dependencies.php');						//	Definition of all dependencies
 	require_once(WHERE_PHP_INCLUDES.'utils.php');					//	Misc utilities
 	require_once(WHERE_PHP_INCLUDES.'html_element.php');			//	HTML element
@@ -199,6 +214,10 @@
 			//	status before deciding how to
 			//	proceed
 			
+			//	Initialize variables
+			$user=null;
+			$verbose=false;
+			
 			//	User is logging in
 			if (
 				($request->GetQueryString(LOGIN_KEY)===TRUE_STRING) &&
@@ -212,101 +231,128 @@
 					$_POST[USERNAME_KEY],
 					$_POST[PASSWORD_KEY]
 				);
+				$verbose=true;
 				
-				if ($user->code===0) {
-				
-					//	Login success
-					$user=$user->user;
-				
-				} else {
-				
-					//	Login failure
-					$login_message=$user->reason;
-					
-					$user=null;
-				
-				}
-			
 			//	User is logging out
 			} else if ($request->GetQueryString(LOGOUT_KEY)===TRUE_STRING) {
 			
-				$user=null;
-				
 				User::Logout();
 			
-			//	Attempt to regenerate a session
+			//	Attempt to regenerate a session from the query
+			//	string
 			} else if (!is_null($request->GetQueryString(SESSION_KEY_KEY))) {
 			
-				//	Regenerate from a session key passed
-				//	in the query string
-				
 				$user=User::Resume($request->GetQueryString(SESSION_KEY_KEY));
 				
-				if ($user->code===0) {
-				
-					//	Login success
-					
-					$user=$user->user;
-					
-					//	Send cookie
-					User::SetCookie($request->GetQueryString(SESSION_KEY_KEY));
-				
-				} else {
-				
-					//	Login failure
-					//
-					//	Session-based logins fail
-					//	silently to avoid poor
-					//	user experience
-					$user=null;
-				
-				}
-				
+				if (!is_null($user->user)) User::SetCookie($request->GetQueryString(SESSION_KEY_KEY));
+			
+			//	Attempt to regenerate a session from cookies
 			} else {
 			
-				//	Regenerate from cookies
-			
 				$user=User::Resume();
-				
+			
+			}
+			
+			//	Handle login results
+			if (isset($user)) {
+			
+				//	Login successful
 				if ($user->code===0) {
 				
-					//	Login success
 					$user=$user->user;
+				
+				//	Login unsuccessful or conditionally
+				//	successful
+				
+				//	Login didn't succeed because
+				//	username, password, or session
+				//	key was wrong
+				} else if (
+					($user->code===1) ||
+					($user->code===5) ||
+					($user->code===6)
+				) {
+				
+					goto login_failure;
+					
+				//	Login didn't succeed because user
+				//	is disabled et cetera
+				
+				//	Admins can login anyway
+				} else if ($user->user->type==='admin') {
+				
+					$user=$user->user;
+				
+				//	Superusers can login, but only if the
+				//	failure code specifies that their organization
+				//	hasn't paid, and in that case they get
+				//	unconditionally redirected to the payment
+				//	page
+				} else if (
+					($user->code===4) &&
+					($user->user->type==='superuser')
+				) {
+				
+					$user=$user->user;
+					
+					require(WHERE_CONTROLLERS.PAYMENT_CONTROLLER);
+					
+					exit();
 				
 				} else {
 				
-					//	Login failure
-					//
-					//	Session-based logins fail
-					//	silently to avoid poor
-					//	user experience
+					login_failure:
+				
+					if ($verbose) $login_message=$user->reason;
+					
 					$user=null;
 				
 				}
 			
 			}
 			
-			//	Force login if user is not
-			//	logged in
-			if (is_null($user)) {
+			//	Route
+			if (
+				is_null($request->GetController()) ||
+				!isset($routes[$request->GetController()])
+			) {
 			
-				require(WHERE_CONTROLLERS.LOGIN_CONTROLLER);
-			
-			//	Otherwise we may proceed with routing
-			} else {
-			
-				if (
-					is_null($request->GetController()) ||
-					!isset($routes[$request->GetController()])
-				) {
+				//	Default route
 				
-					$request->NoController();
-					
-					require(WHERE_CONTROLLERS.$fallback_route);
+				$request->NoController();
+				
+				if ($fallback_route_auth && is_null($user)) {
+				
+					//	Force login
+					require(WHERE_CONTROLLERS.LOGIN_CONTROLLER);
 				
 				} else {
 				
-					require(WHERE_CONTROLLERS.$routes[$request->GetController()]);
+					require(WHERE_CONTROLLERS.$fallback_route);
+				
+				}
+			
+			} else {
+			
+				$route=$routes[$request->GetController()];
+				$auth_required=true;
+				
+				if (is_array($route)) {
+				
+					if (isset($route['auth'])) $auth_required=$route['auth'];
+					
+					$route=$route['route'];
+				
+				}
+				
+				if ($auth_required && is_null($user)) {
+				
+					//	Force login
+					require(WHERE_CONTROLLERS.LOGIN_CONTROLLER);
+				
+				} else {
+				
+					require(WHERE_CONTROLLERS.$route);
 				
 				}
 			
@@ -317,8 +363,10 @@
 		
 	} catch (Exception $e) {
 	
-		if (DEBUG) error(HTTP_INTERNAL_SERVER_ERROR,$e->getMessage());
-		else error(HTTP_INTERNAL_SERVER_ERROR);
+		error(
+			HTTP_INTERNAL_SERVER_ERROR,
+			$e->getMessage()
+		);
 	
 	}
 

@@ -1,38 +1,33 @@
 <?php	global $request;	?>
 
 
+<h1>Users</h1>
+
 <table>
 
 	<thead>
 	
-		<td>Last Name</td>
-		<td>First Name</td>
-		<td>Organization</td>
-		<td>Type</td>
+		<tr>
+		
+			<td>Last Name</td>
+			<td>First Name</td>
+			<td>Type</td>
+		
+		</tr>
 	
 	</thead>
 	
 	<tbody>
 	
-		<?php	foreach ($this->results as $x):	?>
+		<?php	foreach ($this->users as $x):	?>
 		
 		<tr>
 		
 			<?php	$link=htmlspecialchars($request->MakeLink(null,$x->id));	?>
-			
+		
 			<td><a href="<?php	echo($link);	?>"><?php	echo(htmlspecialchars($x->Name('L')));	?></a></td>
 			
 			<td><a href="<?php	echo($link);	?>"><?php	echo(htmlspecialchars($x->Name('F')));	?></a></td>
-			
-			<td>
-			
-				<?php	if (is_null($x->organization)):	?>
-				&nbsp;
-				<?php	else:	?>
-				<?php	echo(htmlspecialchars($x->organization->name));	?>
-				<?php	endif;	?>
-			
-			</td>
 			
 			<td><?php
 			
@@ -40,7 +35,7 @@
 				
 					case 'user':
 					default:
-						
+					
 						echo(htmlspecialchars('User'));
 						break;
 						

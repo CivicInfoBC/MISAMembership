@@ -1,0 +1,62 @@
+<?php	global $request;	?>
+
+<script type="text/javascript">
+
+	function verify_form () {
+	
+		var verified=true;
+		<?php	echo($this->form->RenderVerify());	?>
+		return verified;
+	
+	}
+
+</script>
+
+
+<?php	if (isset($this->messages) && (count($this->messages)!==0)):	?>
+
+<div class="messages">
+
+	<?php	foreach ($this->messages as $message):	?>
+	
+	<div><?php	echo(htmlspecialchars($message));	?></div>
+	
+	<?php	endforeach;	?>
+
+</div>
+
+<?php	endif;	?>
+
+
+<?php	echo($this->form->Render());	?>
+
+
+<script type="text/javascript">
+
+	AddCallbackToEvent(
+		document.getElementById('form'),
+		'onsubmit',
+		verify_form
+	);
+	
+	var terr_unit=document.getElementById('form').elements['territorial_unit'];
+	
+	if (!(
+		(terr_unit===null) ||
+		(terr_unit===undefined)
+	)) AddCallbackToEvent(
+		terr_unit,
+		'onchange',
+		function () {
+		
+			var obj=document.getElementById('form').elements['territorial_unit'];
+		
+			document.getElementById('form').elements['territorial_unit_other'].style.display=
+				(obj.options[obj.selectedIndex].value==='')
+					?	'block'
+					:	'none';
+			
+		}
+	);
+
+</script>

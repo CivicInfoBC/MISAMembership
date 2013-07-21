@@ -79,6 +79,26 @@
 		
 		
 		/**
+		 *	Retrieves the reason string associated with
+		 *	a given code.
+		 *
+		 *	\param [in] $code
+		 *		The code to retrieve the reason string for.
+		 *
+		 *	\return
+		 *		The associated reason string, or \em null
+		 *		if there is no corresponding reason string.
+		 */
+		public static function GetReason ($code) {
+		
+			if (isset(self::$codes[$code])) return self::$codes[$code];
+			
+			return null;
+		
+		}
+		
+		
+		/**
 		 *	Creates a new LoginAttempt object.
 		 *
 		 *	\param [in] $code
@@ -130,10 +150,28 @@
 	class User implements IteratorAggregate {
 	
 	
+		public static $keyword_columns=array(
+			'first_name',
+			'last_name',
+			'title',
+			'username',
+			'address',
+			'address2',
+			'city',
+			'postal_code',
+			'territorial_unit',
+			'country',
+			'phone',
+			'fax',
+			'email',
+			'type'
+		);
+	
+	
 		private $user;
-		private $org;
-		private $session_key;
-		private $session_expiry;
+		public $organization;
+		public $session_key;
+		public $session_expiry;
 		
 		
 		/**
@@ -150,7 +188,12 @@
 		
 			$bcrypt=new Bcrypt(BCRYPT_ROUNDS);
 			
-			return $bcrypt->hash($password);
+			return $bcrypt->hash(
+				Normalizer::normalize(
+					$password,
+					Normalizer::FORM_C
+				)
+			);
 		
 		}
 		
@@ -161,19 +204,25 @@
 		 *	\param [in] $user
 		 *		A MySQLRow or array to wrap.
 		 */
-		public function __construct ($user=null) {
+		public function __construct ($user) {
 		
 			if (!is_null($user)) {
 			
-				if (!(
-					($user instanceof MySQLRow) ||
-					is_array($user)
-				)) throw new Exception('Type mismatch');
+				if ($user instanceof MySQLRow) {
+				
+					$this->user=array();
+					
+					foreach ($user as $key=>$value) $this->user[$key]=$value->GetValue();
+				
+				} else {
+				
+					$this->user=$user;
+				
+				}
 			
 			}
-		
-			$this->user=$user;
-			$this->org=null;
+			
+			$this->organization=null;
 			$this->session_key=null;
 		
 		}
@@ -181,58 +230,158 @@
 		
 		/**
 		 *	Saves this user's data to the database.
+		 *
+		 *	If no ID is specified for this user, a new
+		 *	user is created in the database.
+		 *
+		 *	\return
+		 *		\em null if an existing user's data
+		 *		was updated.  The ID of the newly-inserted
+		 *		user otherwise.
 		 */
 		public function Save () {
-		
-			//	If there's no ID, bail out
-			if (!isset($this->user['id'])) throw new Exception('No ID');
-		
+
 			//	Get database access
 			global $dependencies;
 			$conn=$dependencies[USER_DB];
-		
-			//	Generate SET clause
-			$set_clause='';
-		
-			foreach ($this->user as $field=>$value) {
 			
-				if ($field!=='id') {
+			//	If there's an ID, UPDATE
+			if (isset($this->user['id'])) {
+		
+				//	Generate SET clause
+				$set_clause='';
+			
+				foreach ($this->user as $field=>$value) {
 				
-					if ($set_clause!=='') $set_clause.=',';
+					if ($field!=='id') {
 					
-					if (is_bool($value)) $value=$value ? 1 : 0;
-					
-					$set_clause.=sprintf(
-						'`%s`=%s',
-						preg_replace('/`/u','``',$field),
-						is_null($value)
-							?	'NULL'
-							:	'\''.$conn->real_escape_string($value).'\''
-					);
+						if ($set_clause!=='') $set_clause.=',';
+						
+						if (is_bool($value)) $value=$value ? 1 : 0;
+						
+						$set_clause.=sprintf(
+							'`%s`=%s',
+							preg_replace('/`/u','``',$field),
+							is_null($value)
+								?	'NULL'
+								:	'\''.$conn->real_escape_string($value).'\''
+						);
+						
+					}
 					
 				}
 				
+				//	Perform query against
+				//	the database
+				if ($conn->query(
+					sprintf(
+						'UPDATE `users` SET %s WHERE `id`=\'%s\'',
+						$set_clause,
+						$conn->real_escape_string($this->user['id'])
+					)
+				)===false) throw new Exception($conn->error);
+				
+				return null;
+				
 			}
 			
-			//	Perform query against
-			//	the database
+			//	Otherwise, INSERT
+			
+			//	Generate VALUES listing
+			//	and list of column names
+			$values='';
+			$columns='';
+			
+			foreach ($this->user as $field=>$value) {
+				
+				if ($values!=='') {
+				
+					$values.=',';
+					$columns.=',';
+				
+				}
+				
+				if (is_bool($value)) $value=$value ? 1 : 0;
+				
+				$values.=is_null($value) ? 'NULL' : '\''.$conn->real_escape_string($value).'\'';
+				$columns.='`'.preg_replace('/`/','``',$field).'`';
+			
+			}
+			
+			//	Perform query against the
+			//	database
 			if ($conn->query(
 				sprintf(
-					'UPDATE `users` SET %s WHERE `id`=\'%s\'',
-					$set_clause,
-					$conn->real_escape_string($this->user['id'])
+					'INSERT INTO `users` (%s) VALUES (%s)',
+					$columns,
+					$values
 				)
 			)===false) throw new Exception($conn->error);
+			
+			return $conn->insert_id;
 		
 		}
 		
 		
-		private static function get_inner_query ($active) {
+		public static function GetKeywordQuery ($arr) {
 		
-			if (is_null($active)) return '`users`';
+			global $dependencies;
+		
+			if (
+				is_null($arr) ||
+				($arr==='') ||
+				(count(self::$keyword_columns)===0)
+			) return self::GetAllQuery();
 			
-			if ($active) return '(
-				SELECT
+			if (!is_array($arr)) $arr=array($arr);
+			else if (count($arr)===0) return self::GetAllQuery();
+			
+			$like='';
+			
+			foreach ($arr as $keyword) {
+			
+				if ($like!=='') $like.=' AND ';
+				$like.='(';
+				
+				$first=true;
+				foreach (self::$keyword_columns as $column) {
+				
+					if ($first) $first=false;
+					else $like.=' OR ';
+					
+					$like.='`'.preg_replace(
+						'/`/u',
+						'``',
+						$column
+					).'` LIKE \''.$dependencies[ORG_DB]->real_escape_string(
+						'%'.preg_replace(
+							'/([%_])/u',
+							'$1$1',
+							$keyword
+						).'%'
+					).'\'';
+				
+				}
+				
+				$like.=')';
+			
+			}
+			
+			return 'SELECT * FROM `users` WHERE '.$like;
+		
+		}
+		
+		
+		public static function GetAllQuery () {
+		
+			return 'SELECT * FROM `users`';
+		
+		}
+		
+		
+		public static function GetActiveQuery () {
+		
+			return 'SELECT
 					`users`.*
 				FROM
 					`users`,
@@ -240,6 +389,7 @@
 				WHERE
 					`organizations`.`id`=`users`.`org_id` AND
 					`users`.`enabled`<>0 AND
+					`organizations`.`enabled` IS NOT NULL AND
 					`organizations`.`enabled`<>0 AND
 					(
 						(
@@ -268,11 +418,14 @@
 					`users`
 				WHERE
 					`users`.`org_id` IS NULL AND
-					`users`.`enabled`<>0
-			) `subquery`';
-			
-			return '(
-				SELECT
+					`users`.`enabled`<>0';
+		
+		}
+		
+		
+		public static function GetInactiveQuery () {
+		
+			return 'SELECT
 					`users`.*
 				FROM
 					`users`,
@@ -281,6 +434,7 @@
 					`organizations`.`id`=`users`.`org_id` AND
 					(
 						`users`.`enabled`=0 OR
+						`organizations`.`enabled` IS NULL OR
 						`organizations`.`enabled`=0 OR
 						(
 							(
@@ -310,26 +464,45 @@
 					`users`
 				WHERE
 					`users`.`org_id` IS NULL AND
-					`users`.`enabled`=0
-			) `subquery`';
+					`users`.`enabled`=0';
+		
+		}
+		
+		
+		public static function GetTypeQuery ($type, $complement=false) {
+		
+			if (!in_array($type,array('admin','superuser','user'),true)) $type='user';
+			
+			//	We need a database connection for
+			//	escaping
+			global $dependencies;
+			
+			return sprintf(
+				'SELECT `users`.* FROM `users` WHERE `type`%s\'%s\'',
+				$complement ? '<>' : '=',
+				$dependencies[USER_DB]->real_escape_string($type)
+			);
 		
 		}
 		
 		
 		/**
-		 *	Retrieves the number of users in the database.
+		 *	Retrieves the number of users in a certain
+		 *	result set.
 		 *
-		 *	\param [in] $active
-		 *		If \em null, all results shall be included
-		 *		in the result set.  If \em true only active
-		 *		users shall be included.  If \em false only
-		 *		inactive users shall be included.  Defaults
-		 *		to \em null.
+		 *	\param [in] $query
+		 *		A string, or an object which defines
+		 *		__toString, which shall be used as
+		 *		a query, the size of the result set
+		 *		of which shall be returned.  If
+		 *		\em null all users shall be counted.
+		 *		Defaults to \em null.
 		 *
 		 *	\return
-		 *		The number of users in the database.
+		 *		The size of the result set created by
+		 *		\em query.
 		 */
-		public static function GetCount ($active=null) {
+		public static function GetCount ($query=null) {
 		
 			//	Get database access
 			global $dependencies;
@@ -341,8 +514,8 @@
 					'SELECT
 						COUNT(*)
 					FROM
-						%s',
-					self::get_inner_query($active)
+						(%s) `subquery`',
+					is_null($query) ? self::GetAllQuery() : $query
 				)
 			);
 			
@@ -366,50 +539,52 @@
 		 *
 		 *	\param [in] $page_num
 		 *		The number of the page to retrieve.
+		 *		If \em null all results will be
+		 *		returned.
 		 *	\param [in] $num_per_page
 		 *		The maximum number of results to
-		 *		return on each page.
+		 *		return on each page.  If \em null
+		 *		all results will be returned.
 		 *	\param [in] $order_by
 		 *		ORDER BY clauses which shall be used
 		 *		to determine how the results are
 		 *		ordered.
-		 *	\param [in] $active
-		 *		If \em null, all results shall be included
-		 *		in the result set.  If \em true only active
-		 *		users shall be included.  If \em false only
-		 *		inactive users shall be included.  Defaults
-		 *		to \em null.
+		 *	\param [in] $query
+		 *		The query that shall be used to obtain
+		 *		the IDs of the users to paginate.  If
+		 *		\em null a query returning all users
+		 *		shall be used.  Defaults to
+		 *		\em null.
 		 *
 		 *	\return
 		 *		An enumerated array of User objects representing
 		 *		the requested page.
 		 */
-		public static function GetPage ($page_num, $num_per_page, $order_by, $active=null) {
+		public static function GetPage ($page_num, $num_per_page, $order_by, $query=null) {
 		
 			//	Get database access
 			global $dependencies;
 			$conn=$dependencies[USER_DB];
 			
+			//	Build the query
+			$query_text=sprintf(
+				'SELECT `id` FROM (%s) `subquery`',
+				is_null($query) ? self::GetAllQuery() : $query
+			);
+			
+			if (!(
+				is_null($order_by) ||
+				($order_by==='')
+			)) $query_text.=' ORDER BY '.$order_by;
+			
+			if (!(
+				is_null($page_num) ||
+				is_null($num_per_page)
+			)) $query_text.=' LIMIT '.intval(($page_num-1)*$num_per_page).','.intval($num_per_page);
+			
 			//	Get the IDs of the users on
 			//	this page
-			$query=$conn->query(
-				sprintf(
-					'SELECT
-						`id`
-					FROM
-						%s
-					%s
-					LIMIT %s,%s',
-					self::get_inner_query($active),
-					(
-						(isset($order_by) && ($order_by!==''))
-							?	'ORDER BY '.$order_by
-							:	''
-					),
-					intval(($page_num-1)*$num_per_page),
-					intval($num_per_page)
-				)
-			);
+			$query=$conn->query($query_text);
 			
 			//	Throw on error
 			if ($query===false) throw new Exception($conn->error);
@@ -463,9 +638,9 @@
 		
 			//	Perform organization-related checks
 			//	if applicable
-			if (!is_null($this->org)) {
+			if (!is_null($this->organization)) {
 			
-				if (!($this->org->has_paid || $this->org->perpetual)) {
+				if (!($this->organization->has_paid || $this->organization->perpetual)) {
 				
 					$code=4;
 					
@@ -473,7 +648,7 @@
 				
 				}
 				
-				if (!$this->org->enabled) {
+				if (!$this->organization->enabled) {
 				
 					$code=3;
 					
@@ -496,6 +671,67 @@
 			$code=2;
 			
 			return false;
+		
+		}
+		
+		
+		/**
+		 *	Retrieves the user object from the database
+		 *	that corresponds to a given username or
+		 *	e-mail address.
+		 *
+		 *	\param [in] $username
+		 *		The username or e-mail address based
+		 *		on which to retrieve a user object.
+		 *
+		 *	\return
+		 *		A user object representing the user
+		 *		whose username or e-mail address is
+		 *		given by \em username, or \em null
+		 *		if such a user could not be found.
+		 */
+		public static function GetByUsername ($username) {
+		
+			//	Guard against nulls
+			if (is_null($username)) return null;
+			
+			//	Database access
+			global $dependencies;
+			$conn=$dependencies[USER_DB];
+			
+			//	Attempt to find user in database
+			$query=$conn->query(
+				sprintf(
+					'SELECT
+						*
+					FROM
+						`users`
+					WHERE
+						`username`=\'%1$s\' OR
+						`email`=\'%1$s\'',
+					$conn->real_escape_string($username)
+				)
+			);
+			
+			//	Throw on error
+			if ($query===false) throw new Exception($conn->error);
+			
+			//	If there are no rows,
+			//	user doesn't exist
+			if ($query->num_rows===0) return null;
+			
+			//	Grab the row
+			$row=new MySQLRow($query);
+			
+			//	Create the object we'll return
+			$user=new User($row);
+			
+			//	Grab the user's organization's
+			//	information
+			$user->organization=Organization::GetByID($row['org_id']->GetValue());
+			
+			//	Return
+			return $user;
 		
 		}
 		
@@ -545,12 +781,11 @@
 			$row=new MySQLRow($query);
 			
 			//	Create the object we'll return
-			$user=new User();
-			$user->user=$row;
+			$user=new User($row);
 			
 			//	Grab the corresponding organization's
 			//	information
-			$user->org=Organization::GetByID($row['org_id']->GetValue());
+			$user->organization=Organization::GetByID($row['org_id']->GetValue());
 			
 			//	Return
 			return $user;
@@ -655,8 +890,6 @@
 			//	We know user exists, check to
 			//	see if password is correct
 			
-			$bcrypt=new Bcrypt(BCRYPT_ROUNDS);
-			
 			//	Due to legacy support, the database
 			//	might contain either a bcrypted
 			//	hashed and salted password, or
@@ -677,7 +910,12 @@
 				//	MD5 (legacy)
 				
 				//	Verify
-				if (md5($password)!==$row['password']->GetValue()) return new LoginAttempt(1);
+				if (md5(
+					Normalizer::normalize(
+						$password,
+						Normalizer::FORM_C
+					)
+				)!==$row['password']->GetValue()) return new LoginAttempt(1);
 				
 				//	The user-supplied password is correct,
 				//	which means that $password contains
@@ -706,7 +944,7 @@
 							`username`=\'%s\'',
 						$conn->real_escape_string(
 							//	New bcrypt hash
-							$bcrypt->hash($password)
+							self::PasswordHash($password)
 						),
 						$conn->real_escape_string($username)
 					)
@@ -716,27 +954,27 @@
 			
 				//	bcrypt (modern)
 				
+				$bcrypt=new Bcrypt(BCRYPT_ROUNDS);
+				
 				//	Verify
-				if (!$bcrypt->verify($password,$row['password']->GetValue())) return new LoginAttempt(1);
+				if (!$bcrypt->verify(
+					Normalizer::normalize(
+						$password,
+						Normalizer::FORM_C
+					),
+					$row['password']->GetValue()
+				)) return new LoginAttempt(1);
 			
 			}
 			
 			//	Now that the user is verified, create
 			//	them an object and start filling in
 			//	details
-			$user=new User();
-			$user->user=$row;
+			$user=new User($row);
 			
 			//	Grab information about the user's
 			//	organization
-			$user->org=Organization::GetByID($row['org_id']->GetValue());
-			
-			//	Check to make sure user can
-			//	login
-			if (!$user->Check($code)) return new LoginAttempt(
-				$code,
-				$user
-			);
+			$user->organization=Organization::GetByID($row['org_id']->GetValue());
 			
 			//	User is allowed to login
 			
@@ -791,9 +1029,14 @@
 			//	cookie
 			if (!is_null($remember_me)) self::SetCookie($user->session_key,$remember_me);
 			
-			//	Return the user object and signal
-			//	login success
-			return new LoginAttempt(0,$user);
+			//	Get final login success code
+			$user->Check($code);
+			
+			//	Return
+			return new LoginAttempt(
+				$code,
+				$user
+			);
 		
 		}
 		
@@ -905,18 +1148,11 @@
 			if ($query->num_rows===0) return new LoginAttempt(6);
 			
 			//	Retrieve the user
-			$user=new User();
-			$user->user=new MySQLRow($query);
+			$user=new User(new MySQLRow($query));
 			
 			//	Grab information about the user's
 			//	organization (if any)
-			$user->org=Organization::GetByID($user->user['org_id']->GetValue());
-			
-			//	Make sure user can login
-			if (!$user->Check($code)) return new LoginAttempt(
-				$code,
-				$user
-			);
+			$user->organization=Organization::GetByID($user->org_id);
 			
 			//	Update last login time
 			$query=$conn->query(
@@ -939,8 +1175,14 @@
 			
 			if ($query===false) throw new Exception($conn->error);
 			
-			//	User is good, return success
-			return new LoginAttempt(0,$user);
+			//	Get final login success code
+			$user->Check($code);
+			
+			//	Return
+			return new LoginAttempt(
+				$code,
+				$user
+			);
 		
 		}
 		
@@ -1019,7 +1261,7 @@
 		 *		case corrected to standard (all
 		 *		e-mail addresses are lowercase by
 		 *		definition and treated as such by
-		 *		conforming MTAs.
+		 *		conforming MTAs).
 		 *	-	\'E\' becomes the user's e-mail
 		 *		address case corrected to upper case.
 		 *	-	\'m\' becomes the user's e-mail
@@ -1058,7 +1300,7 @@
 					switch ($matches[0]) {
 					
 						case 'F':
-							return FormatName($row['first_name']->GetValue());
+							return FormatName($row['first_name']);
 						case 'f':
 							//	Have to use preg_split otherwise
 							//	code points represented by multiple
@@ -1066,35 +1308,35 @@
 							//	illegal
 							$split=preg_split(
 								'/(?<!^)(?!$)/u',
-								$row['first_name']->GetValue()
+								$row['first_name']
 							);
 							if (count($split)===0) return '';
 							return MBString::ToUpper($split[0]);
 						case 'L':
-							return FormatName($row['last_name']->GetValue());
+							return FormatName($row['last_name']);
 						case 'l':
 							$split=preg_split(
 								'/(?<!^)(?!$)/u',
-								$row['last_name']->GetValue()
+								$row['last_name']
 							);
 							if (count($split)===0) return '';
 							return MBString::ToUpper($split[0]);
 						case 'e':
-							return MBString::ToLower($row['email']->GetValue());
+							return MBString::ToLower($row['email']);
 						case 'E':
-							return MBString::ToUpper($row['email']->GetValue());
+							return MBString::ToUpper($row['email']);
 						case 'm':
-							return $row['email']->GetValue();
+							return $row['email'];
 						case 'U':
 							return preg_replace_callback(
 								'/^./u',
 								function ($matches) {	return MBString::ToUpper($matches[0]);	},
-								MBString::ToLower($row['username']->GetValue())
+								MBString::ToLower($row['username'])
 							);
 						case 'u':
-							return MBString::ToLower($row['username']->GetValue());
+							return MBString::ToLower($row['username']);
 						case 'n':
-							return $row['username']->GetValue();
+							return $row['username'];
 						default:
 							//	This should never happen,
 							//	but just in case...
@@ -1119,18 +1361,11 @@
 		 */
 		public function ToArray () {
 		
-			$returnthis=array();
+			$returnthis=array(
+				'user' => $this->user,
+				'organization' => is_null($this->organization) ? null : $this->organization->ToArray()
+			);
 			
-			$user=array();
-			
-			foreach ($this as $key=>$value) {
-			
-				$user[$key]=($value instanceof MySQLDatum) ? $value->GetValue() : $value;
-			
-			}
-			
-			$returnthis['user']=$user;
-			$returnthis['organization']=is_null($this->org) ? null : $this->org->ToArray();
 			if (!is_null($this->session_key)) $returnthis['session_key']=$this->session_key;
 			if (!is_null($this->session_expiry)) $returnthis['session_expiry']=$this->session_expiry->format('Y,m,d,H,i,s');
 			
@@ -1166,24 +1401,8 @@
 		 *		\em false otherwise.
 		 */
 		public function __isset ($name) {
-		
-			switch ($name) {
 			
-				case 'organization':return isset($this->org);
-				case 'session_key':return isset($this->session_key);
-				case 'session_expiry':return isset($this->session_expiry);
-			
-			}
-			
-			if ($this->user instanceof MySQLRow) {
-			
-				return !(is_null($this->user[$name]) || is_null($this->user[$name]));
-			
-			} else {
-			
-				return isset($this->user[$name]);
-			
-			}
+			return isset($this->user[$name]);
 		
 		}
 		
@@ -1199,24 +1418,24 @@
 		 *		The value of the requested property.
 		 */
 		public function __get ($name) {
-		
-			switch ($name) {
 			
-				case 'organization':return $this->org;
-				case 'session_key':return $this->session_key;
-				case 'session_expiry':return $this->session_expiry;
-			
-			}
-			
-			if (isset($this->user[$name])) {
-			
-				return ($this->user[$name] instanceof MySQLDatum)
-					?	$this->user[$name]->GetValue()
-					:	$this->user[$name];
-				
-			}
+			if (isset($this->user[$name])) return $this->user[$name];
 			
 			return null;
+		
+		}
+		
+		
+		public function __set ($name, $value) {
+		
+			$this->user[$name]=$value;
+		
+		}
+		
+		
+		public function __unset ($name) {
+		
+			unset($this->user[$name]);
 		
 		}
 	

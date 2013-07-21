@@ -1,5 +1,7 @@
 <?php
 
+	global $request;
+
 	$org=$this->org;
 	$type=$this->type;
 
@@ -62,3 +64,5 @@
 	<?php	endforeach;	?>
 
 </div>
+
+<?php	require(WHERE_TEMPLATES.'org_users.phtml');	?>

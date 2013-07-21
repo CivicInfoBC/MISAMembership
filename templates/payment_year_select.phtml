@@ -1,0 +1,18 @@
+<form method="POST">
+
+	<div>
+	
+		Please select the year for which you wish to pay
+		<select name="year">
+		
+			<?php	foreach ($this->years as $year):	?>
+			<option value="<?php	echo(htmlspecialchars($year->id));	?>"><?php	echo(htmlspecialchars($year->name));	?></option>
+			<?php	endforeach;	?>
+		
+		</select>
+		
+	</div>
+	
+	<input type="submit" value="Submit" />
+
+</form>

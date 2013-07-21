@@ -23,6 +23,20 @@ USE `misa_membership`;
 
 
 /*
+ *	System options.
+ *
+ *	Key/value pair store.
+ */
+CREATE TABLE `settings` (
+	`id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+	`key` varchar(191) NOT NULL,
+	`value` text NOT NULL,
+	PRIMARY KEY (`id`),
+	INDEX (`key`)
+);
+
+
+/*
  *	Membership types.
  */
 CREATE TABLE `membership_types` (
@@ -49,6 +63,7 @@ CREATE TABLE `organizations` (
 	`country` varchar(64) DEFAULT 'Canada',
 	`phone` varchar(50) DEFAULT NULL,
 	`fax` varchar(50) DEFAULT NULL,
+	`url` varchar(255) DEFAULT NULL,
 	--	Is this optional?  Should it be nullable?
 	--	Existing database appears to use zero
 	--	as faux NULL, (which will not work
@@ -143,19 +158,6 @@ CREATE TABLE `payment` (
 
 
 /*
- *	Domains table.
- */
-CREATE TABLE `domains` (
-	`id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-	`org_id` int(11) unsigned NOT NULL,
-	`name` varchar(123) NOT NULL,
-	PRIMARY KEY (`id`),
-	FOREIGN KEY (`org_id`) REFERENCES `organizations`(`id`),
-	UNIQUE KEY (`org_id`,`name`)
-);
-
-
-/*
  *	Users table.
  */
 CREATE TABLE `users` (
@@ -194,8 +196,6 @@ CREATE TABLE `users` (
 	--	login regardless of their organization's
 	--	status
 	`enabled` bool NOT NULL DEFAULT '1',
-	--	What's this for?
-	`subscribed` bool NOT NULL DEFAULT '0',
 	--	Specifies the privileges that the user
 	--	shall have:
 	--
@@ -209,7 +209,8 @@ CREATE TABLE `users` (
 	PRIMARY KEY (`id`),
 	FOREIGN KEY (`org_id`) REFERENCES `organizations`(`id`),
 	UNIQUE KEY (`email`),
-	UNIQUE KEY (`username`)
+	UNIQUE KEY (`username`),
+	INDEX (`type`)
 );
 
 
@@ -301,4 +302,45 @@ INSERT INTO `users` (
 	'5f4dcc3b5aa765d61d8327deb882cf99',
 	'1',
 	'admin'
+);
+
+
+/*
+ *	This setting determines which users will
+ *	receive notifications for new membership
+ *	applications.
+ *
+ *	This setting can be plural, i.e. the key
+ *	may occur many times with many different
+ *	e-mail addresses, in which case the notification
+ *	will be sent to each of them.
+ */
+INSERT INTO `settings` (
+	`key`,
+	`value`
+) VALUES (
+	'membership_application_email',
+	'rleahy@rleahy.ca'
+);
+
+
+/*
+ *	This setting determines whether membership
+ *	application shall be open or closed.
+ *
+ *	This setting is singular, i.e. only the first
+ *	occurrence of the key (the order in which they
+ *	occur being possibly implementation-defined or
+ *	unspecified) will be regarded.
+ *
+ *	If set to "true" the application will be open,
+ *	all other values (or the absence of any value)
+ *	will be regarded as "false".
+ */
+INSERT INTO `settings` (
+	`key`,
+	`value`
+) VALUES (
+	'membership_application_open',
+	'true'
 );

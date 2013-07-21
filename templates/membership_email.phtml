@@ -1,0 +1,56 @@
+<?php	require_once(WHERE_PHP_INCLUDES.'mb.php');	?>
+
+
+<form method="POST">
+
+	<table>
+	
+		<thead>
+		
+			<tr>
+			
+				<td>Name</td>
+				<td>E-Mail</td>
+				<td>Enabled</td>
+			
+			</tr>
+		
+		</thead>
+		
+		<tbody>
+		
+			<?php	foreach ($this->admins as $admin):	?>
+			
+			<tr>
+			
+				<td><?php	echo(htmlspecialchars($admin->Name('L, F')));	?></td>
+				<td><?php	echo(htmlspecialchars($admin->Name('e')));	?></td>
+				<td><input type="checkbox" name="<?php	echo(htmlspecialchars($admin->id));	?>"<?php
+				
+					foreach ($this->recipients as $recipient) {
+					
+						if (MBString::Compare(
+							MBString::ToLower($recipient),
+							$admin->Name('e')
+						)) {
+						
+							?> checked<?php
+							break;
+						
+						}
+					
+					}
+				
+				?> value="<?php	echo(htmlspecialchars(TRUE_STRING));	?>" /></td>
+			
+			</tr>
+			
+			<?php	endforeach;	?>
+		
+		</tbody>
+	
+	</table>
+	
+	<input type="submit" value="Submit" name="Submit" />
+
+</form>

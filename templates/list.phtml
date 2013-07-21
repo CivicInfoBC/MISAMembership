@@ -12,6 +12,7 @@
 		
 	}
 	if (!is_null($request->GetQueryString('active'))) $nav_query_string['active']=$request->GetQueryString('active');
+	if (isset($this->keywords)) $nav_query_string['keywords']=$this->keywords;
 
 ?>
 
@@ -60,6 +61,8 @@
 	<?php	ob_start();	?>
 	
 	<div>
+	
+		<?php	if (!(isset($this->no_type_select) && $this->no_type_select)):	?>
 	
 		Display<select onchange="display_onchange(this);">
 		
@@ -121,6 +124,8 @@
 			?>"<?php	if ($this->active===false):	?> selected<?php	endif;	?>>Inactive</option>
 		
 		</select>
+		
+		<?php	endif;	?>
 	
 	</div>
 	
@@ -147,7 +152,7 @@
 	
 		Page<form method="GET" action="<?php
 		
-			echo(htmlspecialchars($request->MakeLink($request->GetController())));
+			echo(htmlspecialchars($request->MakeLink($request->GetController(),null,isset($this->keywords) ? array('keywords' => $this->keywords) : null)));
 		
 		?>"><?php	foreach ($nav_query_string as $key=>$value):	?>
 		<input type="hidden" name="<?php	echo(htmlspecialchars($key));	?>" value="<?php	echo(htmlspecialchars($value));	?>" />
@@ -177,7 +182,7 @@
 		
 	?>
 	
-	<?php	require(WHERE_TEMPLATES.$this->inner_template);	?>
+	<?php	$this->Next();	?>
 	
 	<?php
 	

@@ -117,6 +117,14 @@ body {
 }
 
 
+#user_area a {
+
+	padding-left: 0px;
+	padding-right: 0px;
+
+}
+
+
 #page_title {
 
 	height: 255px;
@@ -148,8 +156,22 @@ body {
 #top_nav.four > a {
 
 	width: 240px;
-	width: calc((100% - 1px) /4);
+	width: calc((100% - 1px) / 4);
 	width: -webkit-calc(100% / 4);
+
+}
+
+#top_nav.two > a {
+
+	width: 480px;
+	width: calc((100% - 1px) / 2);
+	width: -webkit-calc(100% / 2);
+
+}
+
+#top_nav.one > a {
+
+	width: 100%;
 
 }
 
@@ -273,9 +295,25 @@ h1 {
 
 }
 
-select + input[type="text"] {
+select + input[type="text"], form > div > select {
 
 	display: block;
+
+}
+
+
+form > div > select {
+
+	margin-left: auto;
+	margin-right: auto;
+	width: auto;
+
+}
+
+
+form > div {
+
+	text-align: center;
 
 }
 
@@ -325,6 +363,7 @@ form select {
 #main > form > div > div:nth-child(2), .object_display > div > div:nth-child(2) {
 
 	padding-left: 10px;
+	text-align: left;
 
 }
 
@@ -335,6 +374,14 @@ form select {
 	margin-left: auto;
 	margin-right: auto;
 	height: 25px;
+	padding-left: 5px;
+	padding-right: 5px;
+
+}
+
+
+#main > form > input[type="submit"] {
+
 	width: 200px;
 
 }
@@ -343,6 +390,13 @@ form select {
 #main > form input[type="text"], #main > form input[type="password"] {
 
 	width: 150px;
+
+}
+
+
+#main > a {
+
+	display: block;
 
 }
 
@@ -463,5 +517,38 @@ table thead {
 table a {
 
 	text-decoration: inherit;
+
+}
+
+
+.messages {
+
+	text-align: center;
+	color: red;
+
+}
+
+
+.cc_logo img {
+
+	display: block;
+	margin-left: auto;
+	margin-right: auto;
+
+}
+
+
+#main > h2 {
+
+	font-size: 21px;
+	font-weight: 400;
+
+}
+
+
+.no_results {
+
+	font-style: italic;
+	text-align: center;
 
 }

@@ -89,7 +89,7 @@
 			<div id="banner">
 			
 				<?php	if (!is_null($user)):	?>
-				<div id="user_area">Hello, <?php	echo(htmlspecialchars($user->Name('F L')));	?></div>
+				<div id="user_area">Hello, <?php	echo(htmlspecialchars($user->Name('F L')));	?> [ <a href="<?php	echo(htmlspecialchars($request->MakeLink(null,null,array('logout' => TRUE_STRING))));	?>">Logout</a> ]</div>
 				<?php	endif;	?>
 			
 				<a href="http://devel.misa.bc.ca/"><img src="<?php
@@ -127,28 +127,53 @@
 			
 			</div>
 			
-			<?php	if (!is_null($user)):	?>
+			<?php
 			
-			<div id="top_nav"<?php	if (is_null($user->organization)):	?> class="four"<?php	endif;	?>>
+				if (!is_null($user)):
+				
+					//	We need to figure out how many links
+					//	will be in the nav to deduce the correct
+					//	CSS class (or lack thereof) to use.
+					$nav_count=1;
+					
+					if (!is_null($user->organization)) ++$nav_count;
+					
+					if ($user->type==='admin') $nav_count+=3;
+				
+			?>
+			
+			<div id="top_nav" class="<?php
+			
+				switch ($nav_count) {
+				
+					case 1:
+						echo('one');
+						break;
+					case 2:
+						echo('two');
+						break;
+					case 4:
+						echo('four');
+						break;
+					case 5:
+					default:
+						break;
+				
+				}
+			
+			?>">
 			
 				<a href="<?php	echo(htmlspecialchars($request->MakeLink()));	?>">My Profile</a>
+				
 				<?php	if (!is_null($user->organization)):	?>
-				<a href="<?php
-				
-					echo(
-						htmlspecialchars(
-							$request->MakeLink(
-								'organization',
-								$user->organization->id
-							)
-						)
-					);
-				
-				?>">My Organization</a>
+				<a href="<?php	echo(htmlspecialchars($request->MakeLink('organization',$user->organization->id)));	?>">My Organization</a>
 				<?php	endif;	?>
+				
+				<?php	if ($user->type==='admin'):	?>
 				<a href="<?php	echo(htmlspecialchars($request->MakeLink('users')));	?>">Users</a>
 				<a href="<?php	echo(htmlspecialchars($request->MakeLink('organizations')));	?>">Organizations</a>
-				<a href="<?php	echo(htmlspecialchars($request->MakeLink(null,null,array('logout' => TRUE_STRING))));	?>">Logout</a>
+				<a href="<?php	echo(htmlspecialchars($request->MakeLink('administration')));	?>">Administration</a>
+				<?php	endif;	?>
 			
 			</div>
 			

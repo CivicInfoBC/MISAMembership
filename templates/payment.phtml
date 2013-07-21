@@ -1,0 +1,35 @@
+<?php
+
+	global $request;
+	global $user;
+	
+?>
+
+
+<form action="https://checkout.e-xact.com/payment" method="POST">
+
+	<div>
+	
+		<div>Paying for membership year:</div>
+		<div><?php	echo(htmlspecialchars($this->year->name));	?></div>
+	
+	</div>
+	
+	<div>
+	
+		<div>Paying for membership type:</div>
+		<div><?php	echo(htmlspecialchars($user->organization->membership_type));	?></div>
+	
+	</div>
+	
+	<div>
+	
+		<div>Total:</div>
+		<div>$<?php	echo(htmlspecialchars(sprintf('%.2f',$this->payment->amount)));	?></div>
+	
+	</div>
+
+	<?php	echo($this->payment->Render());	?>
+	<input type="submit" value="Pay Online" />
+
+</form>

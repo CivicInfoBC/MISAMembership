@@ -21,9 +21,22 @@
 	class Organization implements IteratorAggregate {
 	
 	
+		public static $keyword_columns=array(
+			'name',
+			'address1',
+			'address2',
+			'city',
+			'postal_code',
+			'territorial_unit',
+			'country',
+			'phone',
+			'fax'
+		);
+	
+	
 		private $row;
-		private $has_paid;
-		private $membership_type;
+		public $has_paid;
+		public $membership_type;
 		
 		
 		/**
@@ -172,6 +185,91 @@
 		
 		
 		/**
+		 *	Gets the per year price for this organization.
+		 *
+		 *	\return
+		 *		The per year price for this organization.
+		 */
+		public function GetPrice () {
+			
+			//	Get database access
+			global $dependencies;
+			$conn=$dependencies[ORG_DB];
+			
+			//	Get type amount from the database
+			$query=$conn->query(
+				sprintf(
+					'SELECT `price` FROM `membership_types` WHERE `id`=\'%s\'',
+					$conn->real_escape_string($this->membership_type_id)
+				)
+			);
+			
+			//	Throw on error
+			if ($query===false) throw new Exception($conn->error);
+			
+			//	Throw if there are no rows
+			if ($query->num_rows===0) throw new Exception('Invalid membership_type_id');
+			
+			//	Fetch row
+			$row=new MySQLRow($query);
+			
+			//	Return
+			return $row[0]->GetValue();
+		
+		}
+		
+		
+		/**
+		 *	Gets all membership types from the database.
+		 *
+		 *	\return
+		 *		An enumerated array of MySQLRow objects
+		 *		representing each membership type from
+		 *		the database.  The rows are not sorted.
+		 */
+		public static function GetTypes () {
+		
+			//	Get database connection
+			global $dependencies;
+			$conn=$dependencies[ORG_DB];
+			
+			//	Get all membership types
+			//	from the database
+			$query=$conn->query('SELECT * FROM `membership_types`');
+			
+			//	Throw on error
+			if ($query===false) throw new Exception($conn->error);
+			
+			//	Create a result set
+			$results=array();
+			
+			//	Fetch all
+			if ($query->num_rows===0) return $results;
+			
+			for (
+				$row=new MySQLRow($query);
+				!is_null($row);
+				$row=$row->Next()
+			) {
+
+				//	TODO: Replace this by generalizing the
+				//	object-which-encapsulates-a-MySQLRow
+				//	concept
+			
+				$temp=array();
+				
+				foreach ($row as $key=>$value) $temp[$key]=$value->GetValue();
+				
+				$results[]=(object)$temp;
+				
+			}
+			
+			return $results;
+		
+		}
+		
+		
+		/**
 		 *	Creates a new Organization object which
 		 *	wraps a database row.
 		 *
@@ -183,17 +281,20 @@
 		 */
 		public function __construct ($row) {
 		
-			if (!(
-				($row instanceof MySQLRow) ||
-				is_array($row)
-			)) throw new Exception('Type mismatch');
+			if ($row instanceof MySQLRow) {
 			
-			if (!isset($row['id'])) throw new Exception('Schema mismatch');
+				$this->row=array();
 			
-			$this->row=$row;
-			$this->has_paid=self::HasPaid($this->id);
+				foreach ($row as $key=>$value) $this->row[$key]=$value->GetValue();
+			
+			} else {
+			
+				$this->row=$row;
+			
+			}
+			
+			$this->has_paid=isset($row['id']) ? self::HasPaid($this->id) : null;
 			$this->membership_type=self::GetType($this->membership_type_id);
-			$this->type=null;
 		
 		}
 		
@@ -201,38 +302,81 @@
 		/**
 		 *	Saves this organization's data to the
 		 *	database.
+		 *
+		 *	If no ID is specified for this organization,
+		 *	a new organization is created in the database.
+		 *
+		 *	\return
+		 *		\em null if an existing organization's
+		 *		data was updated.  The ID of this newly-inserted
+		 *		organization otherwise.
 		 */
 		public function Save () {
-		
-			//	If there's no ID, bail out
-			if (!isset($this->row['id'])) throw new Exception('No ID');
-		
+
 			//	Get database connection
 			global $dependencies;
 			$conn=$dependencies[ORG_DB];
+		
+			//	If there's an ID, UPDATE
+			if (isset($this->row['id'])) {
 			
-			//	Generate SET clause
-			$set_clause='';
-			
-			foreach ($this->row as $field=>$value) {
-			
-				if ($value instanceof MySQLDatum) $value=$value->GetValue();
-			
-				if ($field!=='id') {
+				//	Generate SET clause
+				$set_clause='';
 				
-					if ($set_clause!=='') $set_clause.=',';
+				foreach ($this->row as $field=>$value) {
+				
+					if ($field!=='id') {
 					
-					if (is_bool($value)) $value=$value ? 1 : 0;
+						if ($set_clause!=='') $set_clause.=',';
+						
+						if (is_bool($value)) $value=$value ? 1 : 0;
+						
+						$set_clause.=sprintf(
+							'`%s`=%s',
+							preg_replace('/`/u','``',$field),
+							is_null($value)
+								?	'NULL'
+								:	'\''.$conn->real_escape_string($value).'\''
+						);
 					
-					$set_clause.=sprintf(
-						'`%s`=%s',
-						preg_replace('/`/u','``',$field),
-						is_null($value)
-							?	'NULL'
-							:	'\''.$conn->real_escape_string($value).'\''
-					);
+					}
 				
 				}
+				
+				//	Perform query against the
+				//	database
+				if ($conn->query(
+					sprintf(
+						'UPDATE `organizations` SET %s WHERE `id`=\'%s\'',
+						$set_clause,
+						$conn->real_escape_string($this->row['id'])
+					)
+				)===false) throw new Exception($conn->error);
+				
+				return null;
+				
+			}
+			
+			//	Otherwise, INSERT
+			
+			//	Generate VALUES listing
+			//	and list of column names
+			$values='';
+			$columns='';
+			
+			foreach ($this->row as $field=>$value) {
+				
+				if ($values!=='') {
+				
+					$values.=',';
+					$columns.=',';
+				
+				}
+				
+				if (is_bool($value)) $value=$value ? 1 : 0;
+				
+				$values.=is_null($value) ? 'NULL' : '\''.$conn->real_escape_string($value).'\'';
+				$columns.='`'.preg_replace('/`/','``',$field).'`';
 			
 			}
 			
@@ -240,25 +384,88 @@
 			//	database
 			if ($conn->query(
 				sprintf(
-					'UPDATE `organizations` SET %s WHERE `id`=\'%s\'',
-					$set_clause,
-					$conn->real_escape_string($this->row['id'])
+					'INSERT INTO `organizations` (%s) VALUES (%s)',
+					$columns,
+					$values
 				)
 			)===false) throw new Exception($conn->error);
+			
+			return $conn->insert_id;
 		
 		}
 		
 		
-		private static function get_inner_query ($active) {
+		public static function GetKeywordQuery ($arr) {
 		
-			if (is_null($active)) return '`organizations`';
+			global $dependencies;
+		
+			if (
+				is_null($arr) ||
+				($arr==='') ||
+				(count(self::$keyword_columns)===0)
+			) return self::GetAllQuery();
 			
-			if ($active) return '(
-				SELECT
+			if (!is_array($arr)) $arr=array($arr);
+			else if (count($arr)===0) return self::GetAllQuery();
+			
+			$like='';
+			
+			foreach ($arr as $keyword) {
+			
+				if ($like!=='') $like.=' AND ';
+				$like.='(';
+				
+				$first=true;
+				foreach (self::$keyword_columns as $column) {
+				
+					if ($first) $first=false;
+					else $like.=' OR ';
+					
+					$like.='`'.preg_replace(
+						'/`/u',
+						'``',
+						$column
+					).'` LIKE \''.$dependencies[ORG_DB]->real_escape_string(
+						'%'.preg_replace(
+							'/([%_])/u',
+							'$1$1',
+							$keyword
+						).'%'
+					).'\'';
+				
+				}
+				
+				$like.=')';
+			
+			}
+			
+			return 'SELECT * FROM `organizations` WHERE '.$like;
+		
+		}
+		
+		
+		public static function GetAllQuery () {
+		
+			return 'SELECT * FROM `organizations`';
+		
+		}
+		
+		
+		public static function GetPendingQuery () {
+		
+			return 'SELECT * FROM `organizations` WHERE `enabled` IS NULL';
+		
+		}
+		
+		
+		public static function GetActiveQuery () {
+		
+			return 'SELECT
 					`organizations`.*
 				FROM
 					`organizations`
 				WHERE
+					`organizations`.`enabled` IS NOT NULL AND
 					`organizations`.`enabled`<>0 AND
 					(
 						(
@@ -279,15 +486,19 @@
 								`membership_years`.`end`>=NOW()
 						)<>0 OR
 						`organizations`.`perpetual`<>0
-					)
-			) `subquery`';
+					)';
+					
+		}
+		
+		
+		public static function GetInactiveQuery () {
 			
-			return '(
-				SELECT
+			return 'SELECT
 					`organizations`.*
 				FROM
 					`organizations`
 				WHERE
+					`organizations`.`enabled` IS NULL OR
 					`organizations`.`enabled`=0 OR
 					(
 						(
@@ -308,24 +519,28 @@
 								`membership_years`.`end`>=NOW()
 						)=0 AND
 						`organizations`.`perpetual`=0
-					)
-			) `subquery`';
+					)';
 		
 		}
 		
 		
 		/**
-		 *	Retrieves the number of organizations in the
-		 *	database.
+		 *	Determines the number of organizations in a
+		 *	certain result set.
 		 *
-		 *	\param [in] $active
-		 *		If \em null, all results shall be included
-		 *		in the result set.  If \em true only active
-		 *		organizations shall be included.  If \em false
-		 *		only inactive organizations shall be
-		 *		included.  Defaults to \em null.
+		 *	\param [in] $query
+		 *		A string, or an object which defines
+		 *		__toString, which shall be used as
+		 *		a query, the size of the result set
+		 *		of which shall be returned.  If
+		 *		\em null all users shall be counted.
+		 *		Defaults to \em null.
+		 *
+		 *	\return
+		 *		The size of the result set created by
+		 *		\em query.
 		 */
-		public static function GetCount ($active=null) {
+		public static function GetCount ($query=null) {
 		
 			//	Get database access
 			global $dependencies;
@@ -337,8 +552,8 @@
 					'SELECT
 						COUNT(*)
 					FROM
-						%s',
-					self::get_inner_query($active)
+						(%s) `subquery`',
+					is_null($query) ? self::GetAllQuery() : $query
 				)
 			);
 			
@@ -363,51 +578,52 @@
 		 *
 		 *	\param [in] $page_num
 		 *		The number of the page to retrieve.
+		 *		If \em null all results will be
+		 *		returned.
 		 *	\param [in] $num_per_page
-		 *		The maximum number of results to return
-		 *		on each page.
+		 *		The maximum number of results to
+		 *		return on each page.  If \em null
+		 *		all results will be returned.
 		 *	\param [in] $order_by
 		 *		ORDER BY clauses which shall be used
 		 *		to determine how results are
 		 *		ordered.
-		 *	\param [in] $active
-		 *		If \em null, all results shall be
-		 *		included in the result set.  If
-		 *		\em true only active organizations
-		 *		shall be included.  If \em false
-		 *		only inactive organizations shall
-		 *		be included.  Defaults to \em null.
+		 *	\param [in] $query
+		 *		A query that shall be used to obtain
+		 *		the IDs of the organizations to paginate.
+		 *		If \em null a query returning all
+		 *		organizations shall be used.  Defaults to
+		 *		\em null.
 		 *
 		 *	\return
 		 *		An enumerated array of Organization objects
 		 *		representing the requested page.
 		 */
-		public static function GetPage ($page_num, $num_per_page, $order_by, $active=null) {
+		public static function GetPage ($page_num, $num_per_page, $order_by, $query=null) {
 		
 			//	Get database access
 			global $dependencies;
 			$conn=$dependencies[ORG_DB];
 			
+			//	Build the query
+			$query_text=sprintf(
+				'SELECT `id` FROM (%s) `subquery`',
+				is_null($query) ? self::GetAllQuery() : $query
+			);
+			
+			if (!(
+				is_null($order_by) ||
+				($order_by==='')
+			)) $query_text.=' ORDER BY '.$order_by;
+			
+			if (!(
+				is_null($page_num) ||
+				is_null($num_per_page)
+			)) $query_text.=' LIMIT '.intval(($page_num-1)*$num_per_page).','.intval($num_per_page);
+			
 			//	Get the organizations on this
 			//	page.
-			$query=$conn->query(
-				sprintf(
-					'SELECT
-						`id`
-					FROM
-						%s
-					%s
-					LIMIT %s,%s',
-					self::get_inner_query($active),
-					(
-						(isset($order_by) && ($order_by!==''))
-							?	'ORDER BY '.$order_by
-							:	''
-					),
-					intval(($page_num-1)*$num_per_page),
-					intval($num_per_page)
-				)
-			);
+			$query=$conn->query($query_text);
 			
 			//	Throw on error
 			if ($query===false) throw new Exception($conn->error);
@@ -518,7 +734,7 @@
 			
 			//	Short-circuit out if there are no
 			//	rows
-			if ($query->num_rows===0) return $result;
+			if ($query->num_rows===0) return $results;
 			
 			//	Get all rows
 			for (
@@ -554,6 +770,79 @@
 		
 		
 		/**
+		 *	Retrieves an enumerated array of all the
+		 *	membership years for which the organization
+		 *	has not paid dues, but which are still in
+		 *	the future.
+		 *
+		 *	\return
+		 *		A list of membership years for which this
+		 *		organization has not paid dues, sorted
+		 *		by date with the earlier years coming
+		 *		first.
+		 */
+		public function UnpaidYears () {
+		
+			//	Get database access
+			global $dependencies;
+			$conn=$dependencies[ORG_DB];
+			
+			//	Execute query
+			$query=$conn->query(
+				sprintf(
+					'SELECT
+						`membership_years`.*
+					FROM
+						`membership_years` LEFT OUTER JOIN
+						(
+							SELECT
+								*
+							FROM
+								`payment`
+							WHERE
+								`org_id`=\'%s\'
+						) `payment` ON `payment`.`membership_year_id`=`membership_years`.`id`
+					WHERE
+						`membership_years`.`end`>=NOW() AND
+						(
+							`payment`.`paid` IS NULL OR
+							`payment`.`paid`=0
+						)
+					ORDER BY
+						`membership_years`.`start` ASC',
+					$conn->real_escape_string($this->id)
+				)
+			);
+			
+			//	Throw on error
+			if ($query===false) throw new Exception($conn->error);
+			
+			//	Prepare result set
+			$results=array();
+			
+			//	Short-circuit out if no results
+			if ($query->num_rows===0) return $results;
+			
+			for (
+				$row=new MySQLRow($query);
+				!is_null($row);
+				$row=$row->Next()
+			) {
+			
+				$result=array();
+				
+				foreach ($row as $field=>$value) $result[$field]=$value->GetValue();
+				
+				$results[]=(object)$result;
+			
+			}
+			
+			return $results;
+		
+		}
+		
+		
+		/**
 		 *	Gets an iterator which allows you to
 		 *	traverse the various properties of the
 		 *	organization.
@@ -579,13 +868,7 @@
 		 */
 		public function ToArray () {
 		
-			$returnthis=array();
-		
-			foreach ($this as $key=>$value) {
-			
-				$returnthis[$key]=$value->GetValue();
-			
-			}
+			$returnthis=$this->row;
 			
 			$returnthis['has_paid']=$this->has_paid ? 1 : 0;
 			$returnthis['membership_type']=$this->membership_type;
@@ -607,16 +890,38 @@
 		 *		exist.
 		 */
 		public function __get ($name) {
-		
-			if ($name==='has_paid') return $this->has_paid;
-			if ($name==='membership_type') return $this->membership_type;
 			
-			if (isset($this->row[$name])) return
-				($this->row instanceof MySQLRow)
-					?	$this->row[$name]->GetValue()
-					:	$this->row[$name];
+			if (isset($this->row[$name])) return $this->row[$name];
 			
 			return null;
+		
+		}
+		
+		
+		/**
+		 *	Sets a property of this organization.
+		 *
+		 *	\param [in] $name
+		 *		The name of the property to set.
+		 *	\param [in] $value
+		 *		The value to set \em name to.
+		 */
+		public function __set ($name, $value) {
+		
+			$this->row[$name]=$value;
+		
+		}
+		
+		
+		/**
+		 *	Unsets a property of this organization.
+		 *
+		 *	\param [in] $name
+		 *		The name of the property to unset.
+		 */
+		public function __unset ($name) {
+		
+			unset($this->row[$name]);
 		
 		}
 		
@@ -635,11 +940,6 @@
 		 *		\em null.
 		 */
 		public function __isset ($name) {
-		
-			if (
-				($name==='has_paid') ||
-				($name==='membership_type')
-			) return true;
 		
 			return isset($this->row[$name]);
 		

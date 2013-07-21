@@ -1,0 +1,41 @@
+<h2>Users</h2>
+
+<?php	if ($this->user->set_size===0):	?>
+
+<div class="no_results">No results</div>
+
+<?php
+
+	else:
+	
+		$this->user->Render(
+			array(
+				'list.phtml',
+				'users_list.phtml'
+			)
+		);
+		
+	endif;
+		
+?>
+
+<h2>Organizations</h2>
+
+<?php	if ($this->org->set_size===0):	?>
+
+<div class="no_results">No results</div>
+
+<?php
+
+	else:
+	
+		$this->org->Render(
+			array(
+				'list.phtml',
+				'organizations_list.phtml'
+			)
+		);
+		
+	endif;
+		
+?>

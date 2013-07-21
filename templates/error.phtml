@@ -1,0 +1,65 @@
+<?php
+
+	$http_or_https='http';
+	
+	if (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS']!=='off')) $http_or_https.='s';
+	
+?><!doctype html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+	<head>
+	
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		
+		<title><?php	echo(htmlspecialchars(defined('ORG_NAME') ? ORG_NAME : 'CivicInfo BC'));	?> - Error</title>
+		
+		<link rel="stylesheet" type="text/css" href="<?php	echo($http_or_https);	?>://www.civicinfo.bc.ca/style/reset.css" />
+		<link rel="stylesheet" type="text/css" href="<?php	echo($http_or_https);	?>://www.civicinfo.bc.ca/style/error.css" />
+	
+	</head>
+	
+	<body>
+	
+		<img src="<?php
+		
+			echo($http_or_https);
+			echo('://');
+			
+			if (defined('ORG_LOGO')):
+				echo(htmlspecialchars(ORG_LOGO));
+			else:
+				
+		?>www.civicinfo.bc.ca/images/civicinfo300w_transparent2.png<?php	endif;	?>" />
+		
+		<div class="informational">
+		
+			<p>An error was encountered while processing your request!</p>
+			<p>See below for details:</p>
+			
+		</div>
+		
+		<div class="title">
+		
+			<?php
+			
+				if (isset($this->error)):
+					echo(htmlspecialchars($this->error));
+				else:
+				
+			?>ERROR<?php	endif;	?>
+		
+		</div>
+		
+		<?php	if (isset($this->error_desc)):	?>
+		<div><?php	echo(htmlspecialchars($this->error_desc));	?></div>
+		<?php	endif;	?>
+		
+		<?php	if (isset($this->desc) && defined('DEBUG') && DEBUG):	?>
+		<div class="informational">The following informamtion about this error was supplied:</div>
+		<div><?php	echo(htmlspecialchars($this->desc));	?></div>
+		<?php	endif;	?>
+	
+	</body>
+
+</html>

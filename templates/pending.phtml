@@ -1,0 +1,44 @@
+<?php	global $request;	?>
+
+
+<form method="POST">
+
+	<table>
+
+		<thead>
+		
+			<td>Name</td>
+			<td>City</td>
+			<td>Province/State</td>
+			<td>Country</td>
+			<td>Type</td>
+		
+		</thead>
+		
+		<tbody>
+		
+			<?php	foreach ($this->results as $x):	?>
+			
+			<tr>
+				
+				<td><a href="<?php	echo(htmlspecialchars($request->MakeLink('organization',$x->id)));	?>"><?php	echo(htmlspecialchars($x->name));	?></a></td>
+				
+				<td><?php	echo(htmlspecialchars($x->city));	?></td>
+				
+				<td><?php	echo(htmlspecialchars($x->territorial_unit));	?></td>
+				
+				<td><?php	echo(htmlspecialchars($x->country));	?></td>
+				
+				<td><?php	echo(htmlspecialchars($x->membership_type));	?></td>
+				
+				<td><input type="submit" value="Approve" name="<?php	echo(htmlspecialchars($x->id));	?>" /></td>
+				
+			</tr>
+				
+			<?php	endforeach;	?>
+		
+		</tbody>
+		
+	</table>
+	
+</form>

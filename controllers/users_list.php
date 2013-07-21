@@ -5,13 +5,37 @@
 
 	//	Active, inactive?
 	$active=$request->GetQueryString('active');
-	$active=$request->GetQueryString('active');
-	if (is_null($active)) $active=true;
-	else if ($active===ALL_STRING) $active=null;
-	else $active=$active===TRUE_STRING;
+	if (is_null($active)) {
+	
+		$active=true;
+	
+	} else {
+	
+		$active=(
+			($active===ALL_STRING)
+				?	null
+				:	(
+						($active===FALSE_STRING)
+							?	false
+							:	true
+					)
+		);
+	
+	}
+	
+	//	Select the correct query
+	$query=(
+		is_null($active)
+			?	User::GetAllQuery()
+			:	(
+					$active
+						?	User::GetActiveQuery()
+						:	User::GetInactiveQuery()
+				)
+	);
 
 	//	Get the count
-	$count=User::GetCount($active);
+	$count=User::GetCount($query);
 	
 	//	Use shared paginated processing
 	//	to get the page number et cetera
@@ -27,12 +51,17 @@
 		$page_num,
 		$num_per_page,
 		'`last_name` ASC,`first_name` ASC',
-		$active
+		$query
 	);
-	$template->inner_template='users_list.phtml';
 	$template->active=$active;
 	
-	Render($template,'list.phtml');
+	Render(
+		$template,
+		array(
+			'list.phtml',
+			'users_list.phtml'
+		)
+	);
 
 
 ?>

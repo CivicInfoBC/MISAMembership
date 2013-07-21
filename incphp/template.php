@@ -9,6 +9,7 @@
 	
 		private $__template_dir="./";
 		private $__vars=array();
+		private $__files=null;
 		
 		
 		public function __construct ($template_dir=null) {
@@ -46,16 +47,36 @@
 		}
 		
 		
-		public function Render ($template_file) {
+		public function Next () {
 		
-			$template_filename=$this->__template_dir.$template_file;
-		
-			if (file_exists($template_filename)) include($template_filename);
+			if (
+				is_null($this->__files) ||
+				(count($this->__files)===0)
+			) return;
+			
+			$file=array_shift($this->__files);
+			
+			$filename=$this->__template_dir.$file;
+			
+			if (file_exists($filename)) include($filename);
 			else throw new Exception(sprintf(
 				self::$include_error,
 				$this->__template_dir,
-				$template_file
+				$file
 			));
+		
+		}
+		
+		
+		public function Render ($file) {
+		
+			if (is_null($file)) return;
+			
+			if (!is_array($file)) $file=array($file);
+		
+			$this->__files=$file;
+			
+			while (count($this->__files)!==0) $this->Next();
 		
 		}
 	

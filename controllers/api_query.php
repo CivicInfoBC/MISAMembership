@@ -53,14 +53,46 @@
 	if (!isset($api_request->type)) api_error(HTTP_BAD_REQUEST);
 
 	
-	//	Get active or set it to default
-	$active=(
+	//	Sanity checks on the "active"
+	//	property, and turn its absence
+	//	into something meaningful
+	if (isset($api_request->active)) {
+	
+		if (!is_bool($api_request->active)) api_error(HTTP_BAD_REQUEST);
+		
+		$active=$api_request->active;
+	
+	} else {
+	
+		$active=null;
+	
+	}
+	
+	
+	//	Get the query we'll be using
+	$query=(
 		(
-			isset($api_request->active) &&
-			is_bool($api_request->active)
+			($api_request->type==='user') ||
+			($api_request->type==='user_count')
 		)
-			?	$api_request->active
-			:	null
+			?	(
+					is_null($active)
+						?	User::GetAllQuery()
+						:	(
+								$active
+									?	User::GetActiveQuery()
+									:	User::GetInactiveQuery()
+							)
+				)
+			:	(
+					is_null($active)
+						?	Organization::GetAllQuery()
+						:	(
+								$active
+									?	Organization::GetActiveQuery()
+									:	Organization::GetInactiveQuery()
+							)
+				)
 	);
 	
 	
@@ -236,7 +268,7 @@
 			) api_error(HTTP_BAD_REQUEST);
 			
 			//	Get the number of results
-			$count=($api_request->type==='user') ? User::GetCount($active) : Organization::GetCount($active);
+			$count=($api_request->type==='user') ? User::GetCount($query) : Organization::GetCount($query);
 			
 			//	Determine the number of pages
 			//	of results
@@ -282,7 +314,7 @@
 					$page_num,
 					$num_per_page,
 					$order_by,
-					$active
+					$query
 				);
 				
 				//	Generate output
@@ -296,7 +328,7 @@
 					$page_num,
 					$num_per_page,
 					$order_by,
-					$active
+					$query
 				);
 				
 				//	Generate output
@@ -350,14 +382,14 @@
 		
 		
 		$api_result=array(
-			'count' => User::GetCount($active)
+			'count' => User::GetCount($query)
 		);
 		
 	
 	} else if ($api_request->type==='organization_count') {
 	
 		$api_result=array(
-			'count' => Organization::GetCount($active)
+			'count' => Organization::GetCount($query)
 		);
 	
 	} else {

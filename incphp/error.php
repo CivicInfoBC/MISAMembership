@@ -1,17 +1,14 @@
 <?php
 
 
-	$email_to=array(
-		'rleahy@rleahy.ca', 'kvalley@civicinfo.bc.ca'
-	);
-	$email_subject='ERROR ON PAGE '.$_SERVER['PHP_SELF'];
-	$email_from='error@civicinfo.bc.ca';
-	$email_filter=array();
-	$email_ip_bypass=array(
-		'184.71.24.198'
-	);
+	if (!defined('WHERE_PHP_INCLUDES')) define('WHERE_PHP_INCLUDES','../phpCode/');
+	if (!defined('WHERE_TEMPLATES')) define('WHERE_TEMPLATES','./');
 
 
+	require_once(WHERE_PHP_INCLUDES.'http_error_codes.php');
+	require_once(WHERE_PHP_INCLUDES.'template.php');
+	
+	
 	//	Constants for various HTTP status codes
 	define('HTTP_BAD_REQUEST',400);
 	define('HTTP_INTERNAL_SERVER_ERROR',500);
@@ -21,237 +18,130 @@
 
 	function error ($param=null, $desc=null) {
 	
-		function html_newline_convert ($html) {
-		
-			return sprintf(
-				'<p>%s</p>',
-				preg_replace(
-					'/\\r/',
-					'',
-					preg_replace(
-						'/\\n/',
-						'</p><p>',
-						$html
-					)
-				)
-			);
-		
-		}
+		//	Headers that shall be added to
+		//	outgoing e-mails
+		$headers=array(
+			'From' => 'error@civicinfo.bc.ca',
+			'Content-Type' => 'text/html;charset=utf-8'
+		);
+		//	E-mail addresses of people who
+		//	will receive error e-mails
+		$recipients=array(
+			'rleahy@rleahy.ca',
+			'kvalley@civicinfo.bc.ca'
+		);
+		//	Values of param for which e-mails
+		//	shall never be sent
+		$filter=array(
+			404
+		);
+		//	IP addresses for which e-mails shall
+		//	not be sent if they are the client
+		$filter_ips=array(
+			'184.71.24.198'
+		);
 	
-		$http_error_code=is_int($param);
+		$template=new Template(WHERE_TEMPLATES);
 		
-		if ($http_error_code) {
+		//	Populate template with data
 		
-			global $WherePHPIncludes;
+		if (!is_null($param)) {
 		
-			require_once(
-				(
-					!isset($WherePHPIncludes)
-						?	'./'
-						:	$WherePHPIncludes
-				).
-				'http_error_codes.php'
-			);
+			$template->error=$param;
+		
+			//	Determine if we were given an
+			//	HTTP status code
+			if (is_int($param)) {
 			
-			$http_header='HTTP/1.1 '.$param;
-			
-			if (
-				isset($http_error_code_map[$param]) &&
-				isset($http_error_code_map[$param]['title'])
-			) $http_header.=' '.$http_error_code_map[$param]['title'];
-			
-			header($http_header);
-		
-		}
-		
-		$http_or_https=htmlspecialchars((
-			!isset($_SERVER['HTTPS']) ||
-			($_SERVER['HTTPS']=='on')
-		) ? 'https' : 'http');
-	
-?><!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-
-<html xmlns="http://www.w3.org/1999/xhtml">
-
-	<head>
-	
-		<meta http-equiv="X-UA-Compatible" content="IE=9" />
-		
-		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-	
-		<title>CivicInfo BC - Error</title>
-		
-		<link rel="stylesheet" type="text/css" href="<?php	echo($http_or_https);	?>://www.civicinfo.bc.ca/style/reset.css" />
-		<link rel="stylesheet" type="text/css" href="<?php	echo($http_or_https);	?>://www.civicinfo.bc.ca/style/error.css" />
-	
-	</head>
-	
-	<body>
-	
-		<img src="<?php	echo($http_or_https);	?>://www.civicinfo.bc.ca/images/civicinfo300w_transparent2.png" />
-		
-		<div class="informational"><p>An error was encountered while processing your request!</p><p>See below for details:</p></div>
-		
-		<?php
-		
-			//	If there's nothing coherent to output given the parameters the function was called with
-			if (
-				!isset($param) ||
-				(trim($param)=='') ||
-				(
-					$http_error_code &&
-					!isset($http_error_code_map[$param])
-				)
-			):
-			
-		?>
-		
-		<div class="title">ERROR</div>
-		
-		<?php
-		
-			else:
+				global $http_error_code_map;
 				
-				if ($http_error_code):
-		
-		?>
-		
-		<div class="title"><?php	echo(htmlspecialchars($param));	?> <?php	echo(htmlspecialchars($http_error_code_map[$param]['title']));	?></div>
-		
-		<?php
-		
-					if (isset($http_error_code_map[$param]['desc'])):
-					
-		?>
-		
-		<div><?php	echo(html_newline_convert(htmlspecialchars($http_error_code_map[$param]['desc'])));	?></div>
-		
-		<?php
-		
-					endif;
-					
-				else:
-		
-		?>
-		
-		<div class="title"><?php	echo(htmlspecialchars($param));	?></div>
-		
-		<?php
-		
-				endif;
+				if (isset($http_error_code_map[$param])) {
 				
-			endif;
+					if (isset($http_error_code_map[$param]['title'])) {
+					
+						$template->error.=' '.$http_error_code_map[$param]['title'];
+					
+					}
+					
+					if (isset($http_error_code_map[$param]['desc'])) {
+					
+						$template->error_desc=$http_error_code_map[$param]['desc'];
+					
+					}
+				
+				}
 			
-			if (($desc!=null) && (trim($desc)!='')):
+			}
 			
-		?>
-		
-		<div class="informational">The following information about your error was supplied:</div>
-		
-		<div><?php	echo(html_newline_convert(htmlspecialchars($desc)));	?></div>
-		
-		<?php	endif;	?>
-	
-	</body>
-
-</html><?php
-
-		//	Prepare e-mail
-		
-		global $email_filter;
-		foreach ($email_filter as $x) {
-		
-			if ($param==$x) exit();
-		
 		}
 		
-		global $email_ip_bypass;
-		foreach ($email_ip_bypass as $x) {
+		if (!is_null($desc)) $template->desc=$desc;
 		
-			if ($_SERVER['REMOTE_ADDR']===$x) exit();
+		//	Render page
+		$template->Render('error.phtml');
 		
-		}
-		
-		ob_start();
-		
-		if (!is_null($param)):
-		
-?>The following status was specified:
-
-<?php
-
-		echo($param);
-
+		//	Filter -- see if we should
+		//	send an e-mail
 		if (
-			$http_error_code &&
-			isset($http_error_code_map[$param]) &&
-			is_array($http_error_code_map[$param]) &&
-			isset($http_error_code_map[$param]['desc']) &&
-			isset($http_error_code_map[$param]['title'])
-		):
+		
+			//	Filter based on IP -- if the client
+			//	has been specified in $filter_ips,
+			//	do not send e-mail
+			in_array(
+				$_SERVER['REMOTE_ADDR'],
+				$filter_ips,
+				true
+			) ||
+			//	Filter based on error type -- if the
+			//	error has been ignored, do not send
+			//	e-mail
+			in_array(
+				$param,
+				$filter,
+				true
+			)
+		) exit();
+		
+		//	Send email
+		
+		//	Generate recipient list
+		$to='';
+		foreach ($recipients as $x) {
+		
+			if ($to!=='') $to.=',';
 			
-?> - <?php	echo($http_error_code_map[$param]['title']);	?> - <?php	echo($http_error_code_map[$param]['desc']);
-
-		endif;
-		
-?>
-
-
-<?php
-		
-		endif;
-
-		if (!is_null($desc)):
-		
-?>The following description was given:
-
-<?php	echo($desc);	?>
-
-
-<?php
-
-		endif;
-		
-		foreach (array('$_GET'=>$_GET,'$_POST'=>$_POST,'$_COOKIE'=>$_COOKIE,'$_SERVER'=>$_SERVER) as $x=>$y):
-		
-			echo($x.'=');
-			var_dump($y);
-			
-?>
-
-
-<?php
-		
-		endforeach;
-		
-		global $email_to;
-		global $email_subject;
-		global $email_from;
-		
-		$email_to_string='';
-		$first=true;
-		foreach ($email_to as $x) {
-		
-			if ($first) $first=false;
-			else $email_to_string.=',';
-			
-			$email_to_string.=$x;
+			$to.=$x;
 		
 		}
 		
-		//	Send message
+		//	Generate header list
+		$headers_str='';
+		foreach ($headers as $x=>$y) {
+		
+			if ($headers_str!=='') $headers_str.="\r\n";
+			
+			$headers_str.=$x.': '.$y;
+		
+		}
+		
+		//	Generate e-mail contents
+		ob_start();
+		$template->Render('error_email.phtml');
+		$contents=ob_get_contents();
+		ob_end_clean();
+		
+		//	Send email
 		mb_send_mail(
-			$email_to_string,
-			$email_subject,
-			ob_get_contents(),
-			'From: '.$email_from."\r\n".'Reply-To: '.$email_from."\r\n".'X-Mailer: PHP/'.phpversion()
+			$to,
+			$_SERVER['COMPUTERNAME'].': Error in script '.$_SERVER['SCRIPT_NAME'],
+			$contents,
+			$headers_str
 		);
 		
-		ob_end_clean();
-
-		//	ABORT
+		//	END
 		exit();
 	
 	}
-	
+
+
 ?>

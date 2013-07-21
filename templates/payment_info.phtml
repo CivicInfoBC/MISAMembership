@@ -1,0 +1,51 @@
+<h1>Payment Information</h1>
+
+<table>
+
+	<thead>
+	
+		<tr>
+	
+			<td>Date</td>
+			<td>Type</td>
+			<td>Subtotal</td>
+			<td>Tax</td>
+			<td>Total</td>
+			<td>Paid</td>
+			
+		</tr>
+	
+	</thead>
+	
+	<tbody>
+	
+		<?php	$format='M j, Y';	?>
+	
+		<?php	foreach ($this->payment_info as $x):	?>
+		
+		<tr>
+		
+			<td><?php	echo(htmlspecialchars($x['created']->GetValue()->format($format)));	?></td>
+			<td><?php
+				
+				echo(
+					htmlspecialchars(
+						($x['type']->GetValue()==='membership new')
+							?	'New'
+							:	'Renewal'
+					)
+				);
+				
+			?></td>
+			<td>$<?php	echo(htmlspecialchars(sprintf('%.2f',$x['subtotal']->GetValue())));	?></td>
+			<td>$<?php	echo(htmlspecialchars(sprintf('%.2f',$x['tax']->GetValue())));	?></td>
+			<td>$<?php	echo(htmlspecialchars(sprintf('%.2f',$x['total']->GetValue())));	?></td>
+			<td><?php	echo(htmlspecialchars(($x['paid']->GetValue()===0) ? 'No' : 'Yes'));	?></td>
+			
+		</tr>
+		
+		<?php	endforeach;	?>
+	
+	</tbody>
+	
+</table>
