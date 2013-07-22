@@ -284,7 +284,7 @@ CREATE TABLE `sessions` (
  *	method to test the automatic
  *	switch over mechanism.
  */
-INSERT INTO `users` (
+/*INSERT INTO `users` (
 	`first_name`,
 	`last_name`,
 	`email`,
@@ -302,7 +302,7 @@ INSERT INTO `users` (
 	'5f4dcc3b5aa765d61d8327deb882cf99',
 	'1',
 	'admin'
-);
+);*/
 
 
 /*
@@ -342,5 +342,29 @@ INSERT INTO `settings` (
 	`value`
 ) VALUES (
 	'membership_application_open',
+	'true'
+);
+
+
+/*
+ *	This setting determines whether membership
+ *	dues may be paid.
+ *
+ *	This setting is singular, i.e. only the first
+ *	occurrence of the key (the order in which they
+ *	occur being possibly implementation-defined or
+ *	unspecified) will be regarded.
+ *
+ *	If set to "true" membership dues may be paid
+ *	for all membership years which are:
+ *
+ *	1.	Not in the past.
+ *	2.	In the `membership_years` table.
+ */
+INSERT INTO `settings` (
+	`key`,
+	`value`
+) VALUES (
+	'dues_payment_permitted',
 	'true'
 );

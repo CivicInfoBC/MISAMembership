@@ -21,6 +21,18 @@
 			
 		},
 		'Postal/Zip Code' => 'postal_code',
+		'Web Address' => function () use ($org) {
+		
+			return (
+				(!is_null($org->url) && ($org->url!==''))
+					?	sprintf(
+							'<a href="%1$s">%1$s</a>',
+							htmlspecialchars($org->url)
+						)
+					:	''
+			);
+		
+		},
 		'Phone' => 'phone',
 		'Fax' => 'fax',
 		'Type' => function () use ($type) {	return htmlspecialchars($type);	},
@@ -33,9 +45,9 @@
 		'Secondary Contact Title' => 'secondary_contact_title',
 		'Secondary Contact E-Mail' => 'secondary_contact_email',
 		'Secondary Contact Phone' => 'secondary_contact_phone',
-		'Secondary Contact Fax' => 'secondary_contact_fax',
+		'Secondary Contact Fax' => 'secondary_contact_fax'/*,
 		'Enabled' => function () use ($org) {	return htmlspecialchars($org->enabled ? 'Yes' : 'No');	},
-		'Perpetual' => function () use ($org) {	return htmlspecialchars($org->perpetual ? 'Yes' : 'No');	}
+		'Perpetual' => function () use ($org) {	return htmlspecialchars($org->perpetual ? 'Yes' : 'No');	}*/
 	);
 
 ?>

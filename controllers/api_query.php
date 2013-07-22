@@ -1,6 +1,9 @@
 <?php
 
 
+	require_once(WHERE_PHP_INCLUDES.'mb.php');
+
+
 	//	Handles selecting the appropriate query
 	//	for the request-in-question
 	function get_query () {
@@ -33,12 +36,16 @@
 				
 				if (is_string($api_request->keywords)) {
 				
+					if (($api_request->keywords=MBString::Trim($api_request->keywords))==='') api_error(HTTP_BAD_REQUEST);
+				
 					$keywords=preg_split(
 						'/\\s+/u',
 						$api_request->keywords
 					);
 				
 				} else if (is_array($api_request->keywords)) {
+				
+					if (count($api_request->keywords)===0) api_error(HTTP_BAD_REQUEST);
 				
 					$keywords=$api_request->keywords;
 				

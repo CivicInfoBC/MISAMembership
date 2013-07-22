@@ -129,6 +129,12 @@
 				$org->postal_code
 			),
 			new TextFormElement(
+				'url',
+				'Web Address',
+				'',	//	Optional
+				$org->url
+			),
+			new TextFormElement(
 				'phone',
 				'Phone',
 				'^[\\d\\-\\s\\(\\)\\+]+$',	//	Non-optional
@@ -218,24 +224,32 @@
 				'Secondary Contact Fax',
 				'^[\\d\\-\\s\\(\\)\\+]*$',	//	Optional but with character restrictions
 				$org->contact_fax
-			),
-			//	If the user is a sitewide
-			//	administrator they can enable
-			//	and disable organizations
-			($user->type==='admin')
-				?	new CheckBoxFormElement(
-						'enabled',
-						$org->enabled,
-						'Enabled'
-					)
-				:	new TextElement(
-						'Enabled',
-						$org->enabled ? 'Yes' : 'No'
-					)
-			,
-			//	If the user is a sitewide
-			//	administrator they can make
-			//	organizations "perpetual"
+			)
+		);
+		
+		//	If the user is a sitewide admin
+		//	they can set an organization's
+		//	enabled/disabled status, other
+		//	types of users cannot see it.
+		if ($user->type==='admin') {
+		
+			$elements[]=new CheckBoxFormElement(
+				'enabled',
+				$org->enabled,
+				'Enabled'
+			);
+		
+		}
+		
+		
+		//	If the user is a sitewide
+		//	administrator they can make
+		//	organizations "perpetual".
+		//
+		//	Organization admins can view
+		//	whether or not their organization
+		//	is "perpetual".
+		$elements[]=(
 			($user->type==='admin')
 				?	new CheckBoxFormElement(
 						'perpetual',
@@ -246,11 +260,12 @@
 						'Perpetual',
 						$org->perpetual ? 'Yes' : 'No'
 					)
-			,
-			new SubmitFormElement(
-				'Submit'
-			)
 		);
+		
+		$elements[]=new SubmitFormElement(
+			'Submit'
+		);
+		
 		$form=new Form('','POST',$elements);
 		
 		

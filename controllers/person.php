@@ -249,39 +249,35 @@
 						'Organization',
 						is_null($curr_user->organization) ? '' : $curr_user->organization->name
 					)
-			,
-			//	If the user is not a regular user,
-			//	they can enable/disable users
-			//
-			//	Also don't let users disable themselves,
-			//	that's just asking for trouble...
-			((($user->type==='superuser') || ($user->type==='admin')) && ($curr_user->id!==$user->id))
-				?	new CheckBoxFormElement(
-						'enabled',
-						$curr_user->enabled,
-						'Enabled'
-					)
-				:	new TextElement(
-						'Enabled',
-						$curr_user->enabled ? 'Yes' : 'No'
-					)
-			,
-			new CheckBoxFormElement(
-				'subscribed',
-				$curr_user->subscribed,
-				'Subscribed'
-			),
-			//	Regular users can't change
-			//	status, so they just see
-			//	a TextElement, but higher
-			//	levels of privilege see 
-			//	a drop-down which allows them
-			//	to make members up to their own
-			//	level of privilege
-			//
-			//	Also don't let users change
-			//	their own type, that's just asking
-			//	for trouble...
+		);
+		
+		//	If the user is not a regular user,
+		//	they can enable/disable users,
+		//	except themselves
+		if (
+			(
+				($user->type==='superuser') ||
+				($user->type==='admin')
+			) &&
+			($curr_user->id!==$user->id)
+		) $elements[]=new CheckBoxFormElement(
+			'enabled',
+			$curr_user->enabled,
+			'Enabled'
+		);
+		
+		//	Regular users can't change
+		//	status, so they just see
+		//	a TextElement, but higher
+		//	levels of privilege see 
+		//	a drop-down which allows them
+		//	to make members up to their own
+		//	level of privilege
+		//
+		//	Also don't let users change
+		//	their own type, that's just asking
+		//	for trouble...
+		$elements[]=(
 			((($user->type==='superuser') || ($user->type==='admin')) && ($curr_user->id!==$user->id))
 				?	new DropDownFormElement(
 						'type',
@@ -293,11 +289,12 @@
 						'Type',
 						$user_types[is_null($curr_user->type) ? 'user' : $curr_user->type]
 					)
-			,
-			new SubmitFormElement(
-				'Submit'
-			)
 		);
+		
+		$elements[]=new SubmitFormElement(
+			'Submit'
+		);
+		
 		$form=new Form('','POST',$elements);
 		
 		//	Did we POST?

@@ -32,16 +32,11 @@
 			return htmlspecialchars(is_null($curr_user->organization) ? '' : $curr_user->organization->name);
 		
 		},
-		'Enabled' => function () use ($curr_user) {
+		/*'Enabled' => function () use ($curr_user) {
 		
 			return htmlspecialchars($curr_user->enabled ? 'Yes' : 'No');
 		
-		},
-		'Subscribed' => function () use ($curr_user) {
-		
-			return htmlspecialchars($curr_user->subscribed ? 'Yes' : 'No');
-		
-		},
+		},*/
 		'Type' => function () use ($curr_user) {
 		
 			return htmlspecialchars(
