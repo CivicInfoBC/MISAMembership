@@ -160,6 +160,20 @@
 		
 		
 		/**
+		 *	Retrieves all arguments.
+		 *
+		 *	\return
+		 *		An array containing all arguments
+		 *		passed to this request.
+		 */
+		public function GetArgs () {
+		
+			return $this->args;
+		
+		}
+		
+		
+		/**
 		 *	Determines whether or not a given query
 		 *	string key has an associated value.
 		 *

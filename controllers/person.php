@@ -14,7 +14,13 @@
 		//	Only organization admins and
 		//	sitewide admins can add new
 		//	users
-		if (!(($user->type==='admin') || ($user->type==='superuser'))) error(HTTP_FORBIDDEN);
+		if (!(
+			($user->type==='admin') ||
+			(
+				($user->type==='superuser') &&
+				!is_null($user->org_id)
+			)
+		)) error(HTTP_FORBIDDEN);
 	
 		$add=true;
 		
@@ -352,6 +358,10 @@
 			
 			//	Branch based on whether we're adding or not
 			if ($add) {
+			
+				//	Organization admins can only create
+				//	users in their own organization
+				if ($user->type==='superuser') $arr['org_id']=$user->org_id;
 			
 				//	We need to make sure no one has
 				//	the username/e-mail that has been

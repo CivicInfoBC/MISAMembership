@@ -77,7 +77,6 @@
 		return (
 			($_SERVER['REQUEST_METHOD']==='POST') &&
 			($_SERVER['CONTENT_TYPE']==='application/x-www-form-urlencoded') &&
-			($request->GetQueryString(LOGIN_KEY)!==TRUE_STRING) &&
 			isset($_POST)
 		);
 	
@@ -231,6 +230,7 @@
 					$_POST[USERNAME_KEY],
 					$_POST[PASSWORD_KEY]
 				);
+				
 				$verbose=true;
 				
 			//	User is logging out
@@ -308,6 +308,24 @@
 					$user=null;
 				
 				}
+			
+			}
+			
+			//	Redirect logins to get rid of
+			//	spurious query string entry
+			if (!(is_null($user) || is_null($request->GetQueryString(LOGIN_KEY)))) {
+			
+				unset($_GET[LOGIN_KEY]);
+				
+				header(
+					'Location: '.$request->MakeLink(
+						$request->GetController(),
+						$request->GetArgs(),
+						$_GET
+					)
+				);
+			
+				exit();
 			
 			}
 			

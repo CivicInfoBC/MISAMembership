@@ -1,7 +1,18 @@
-<?php	global $request;	?>
+<?php
+
+	global $request;
+	global $user;
+	
+?>
 
 
 <h1>Users</h1>
+
+<?php	if (($user->type==='admin') || ($user->org_id===$this->org->id)):	?>
+
+<div class="top_link"><a href="<?php	echo(htmlspecialchars($request->MakeLink(null,'add')));	?>">Add User</a></div>
+
+<?php	endif;	?>
 
 <?php	if (count($this->users)===0):	?>
 

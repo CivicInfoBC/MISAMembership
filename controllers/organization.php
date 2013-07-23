@@ -74,6 +74,7 @@
 	
 	//	Template and shared info
 	$template=new Template(WHERE_TEMPLATES);
+	$template->org=$org;
 	
 	
 	//	IF we're just displaying the organizational

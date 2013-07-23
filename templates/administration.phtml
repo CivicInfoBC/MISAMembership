@@ -1,6 +1,7 @@
 <?php	global $request;	?>
 
 
+<a href="<?php	echo(htmlspecialchars($request->MakeLink(null,'add')));	?>">Add User</a>
 <a href="<?php	echo(htmlspecialchars($request->MakeLink('organization','add')));	?>">Add Organization</a>
 <a href="<?php	echo(htmlspecialchars($request->MakeLink('pending')));	?>">View Pending Membership Applications</a>
 <a href="<?php	echo(htmlspecialchars($request->MakeLink('membership_email')));	?>">Change Notifications for Membership Applications</a>
