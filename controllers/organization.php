@@ -4,226 +4,241 @@
 	require_once(WHERE_PHP_INCLUDES.'form.php');
 	
 	
-	//	Select the organization
+	//	Select the organization and set
+	//	the add flag if we're adding a new
+	//	organization
+	if ($request->GetArg(0)==='add') {
 	
-	unset($org);
+		//	ADDING
+		
+		//	Only sitewide admins can
+		//	add new organizations
+		if ($user->type!=='admin') error(HTTP_FORBIDDEN);
+		
+		$add=true;
+		
+		//	Empty organization with no
+		//	properties
+		$org=new Organization(array());
 	
-	//	If there's no argument, it's
-	//	the logged it user's organization
-	if (is_null($request->GetArg(0))) {
+	} else {
 	
-		$org=$user->organization;
-	
-	//	Make sure the organization ID
-	//	supplied is numeric
-	} else if (
-		is_numeric($request->GetArg(0)) &&
-		(($org_id=intval($request->GetArg(0)))==floatval($request->GetArg(0)))
-	) {
-	
-		$org=Organization::GetByID($org_id);
+		//	EDITING
+		
+		$add=false;
+		
+		$id=$request->GetArg(0);
+		
+		$org=(
+			is_numeric($id) &&
+			(intval($id)==floatval($id))
+		) ? Organization::GetByID(intval($id)) : $user->organization;
+		
+		//	Make sure that organization
+		//	actually exists
+		if (is_null($org)) error(HTTP_BAD_REQUEST);
 	
 	}
 	
-	//	If there's no organization
-	//	specified, die
-	if (!isset($org)) error(HTTP_BAD_REQUEST);
 	
-	
-	//	Determine what kind of access to
-	//	this organization this user has
-	$read_only=!(
-		//	If this user is a site admin, they
-		//	can modify every organization
+	//	If editing, determine the kind of
+	//	access the user can have
+	if (!$add) $read_only=!(
+		//	Sitewide admins can edit
+		//	everything
 		($user->type==='admin') ||
-		//	If this user is an organization admin
-		//	they can modify the organization only
-		//	if it's their organization
+		//	Organization admins can
+		//	edit their own organization
 		(
 			($user->type==='superuser') &&
-			(!is_null($user->organization)) &&
-			($user->organization->id===$org->id)
+			($user->org_id===$org->id)
 		)
 	);
 	
 	
-	//	Title
+	//	Set title
 	$title=(
-		(
-			isset($user->organization) &&
-			($user->organization->id===$org->id)
-		)
-			?	'My Organization'
+		$add
+			?	'Add Organization'
 			:	(
-					$read_only
-						?	'View Organization'
-						:	'Edit Organization'
+					($user->org_id===$org->id)
+						?	'My Organization'
+						:	(
+								$read_only
+									?	'View Organization'
+									:	'Edit Organization'
+							)
 				)
 	);
 	
 	
 	//	Template and shared info
 	$template=new Template(WHERE_TEMPLATES);
-	//	Get users attached to this organization
-	$template->users=$org->GetUsers();
 	
 	
 	//	IF we're just displaying the organizational
 	//	information we have all the information we
 	//	need to dispatch to a template
-	if ($read_only) {
+	if (!$add && $read_only) {
 		
 		$template->org=$org;
 		$template->type=Organization::GetType($org->membership_type_id);
+		$template->users=$org->GetUsers();
 		
 		Render($template,'display_organization.phtml');
 	
 	} else {
 	
 		//	Prepare the form
-		$elements=array(
+		$elements=$add ? array() : array(
 			new TextElement(
 				'Organization ID',
 				$org->id
-			),
-			new TextFormElement(
-				'name',
-				'Name',
-				'^.+$',	//	Non-optional
-				$org->name
-			),
-			new TextFormElement(
-				'address1',
-				'Address',
-				'^.+$',	//	Non-optional
-				$org->address1,
-				'text',
-				'wide'
-			),
-			new TextFormElement(
-				'address2',
-				'Address (Continued)',
-				'',	//	Optional
-				$org->address2,
-				'text',
-				'wide'
-			),
-			new TextFormElement(
-				'city',
-				'City',
-				'^.+$',	//	Non-optional
-				$org->city
-			),
-			new ProvinceFormElement(
-				'territorial_unit',
-				'Province/State & Country',
-				'^.+$',	//	Non-optional
-				(is_null($org->territorial_unit) || ($org->territorial_unit===''))
-					?	$org->country
-					:	$org->country.' - '.$org->territorial_unit
-			),
-			new TextFormElement(
-				'postal_code',
-				'Postal/Zip Code',
-				'^\\s*[A-Za-z]\\d[A-Za-z](?:\\s|\\-)*\\d[A-Za-z]\\d|\\d{5}\\s*$',
-				$org->postal_code
-			),
-			new TextFormElement(
-				'url',
-				'Web Address',
-				'',	//	Optional
-				$org->url
-			),
-			new TextFormElement(
-				'phone',
-				'Phone',
-				'^[\\d\\-\\s\\(\\)\\+]+$',	//	Non-optional
-				$org->phone
-			),
-			new TextFormElement(
-				'fax',
-				'Fax',
-				'^[\\d\\-\\s\\(\\)\\+]*$',	//	Optional but with character restrictions
-				$org->fax
-			),
-			//	If the user is a sitewide
-			//	administrator they can change
-			//	the type of the organization,
-			//	otherwise they can just see
-			//	it
-			($user->type==='admin')
-				?	new DropDownFormElement(
-						'membership_type_id',
-						$org->membership_type_id,
-						'Type',
-						$dependencies['MISADBConn'],
-						false,
-						'SELECT `id`,`name` FROM `membership_types` ORDER BY `name`'
-					)
-				:	new TextElement(
-						'Type',
-						Organization::GetType($org->membership_type_id)
-					)
-			,
-			new TextFormElement(
-				'contact_name',
-				'Primary Contact Name',
-				'^.+$',	//	Non-optional
-				$org->contact_name
-			),
-			new TextFormElement(
-				'contact_title',
-				'Primary Contact Title',
-				'',	//	Optional
-				$org->contact_title
-			),
-			new TextFormElement(
-				'contact_email',
-				'Primary Contact E-Mail',
-				'^[^@]+@[^@]+\\.[^@]+$',	//	E-mails can't be encapsulated by regexes, but here's some basic requirements
-				$org->contact_email
-			),
-			new TextFormElement(
-				'contact_phone',
-				'Primary Contact Phone',
-				'^[\\d\\-\\s\\(\\)\\+]+$',	//	Non-optional
-				$org->contact_phone
-			),
-			new TextFormElement(
-				'contact_fax',
-				'Primary Contact Fax',
-				'^[\\d\\-\\s\\(\\)\\+]*$',	//	Optional but with character restrictions
-				$org->contact_fax
-			),
-			new TextFormElement(
-				'secondary_contact_name',
-				'Secondary Contact Name',
-				'^.+$',	//	Non-optional
-				$org->contact_name
-			),
-			new TextFormElement(
-				'secondary_contact_title',
-				'Secondary Contact Title',
-				'',	//	Optional
-				$org->contact_title
-			),
-			new TextFormElement(
-				'secondary_contact_email',
-				'Secondary Contact E-Mail',
-				'^[^@]+@[^@]+\\.[^@]+$',	//	E-mails can't be encapsulated by regexes, but here's some basic requirements
-				$org->contact_email
-			),
-			new TextFormElement(
-				'secondary_contact_phone',
-				'Secondary Contact Phone',
-				'^[\\d\\-\\s\\(\\)\\+]+$',	//	Non-optional
-				$org->contact_phone
-			),
-			new TextFormElement(
-				'secondary_contact_fax',
-				'Secondary Contact Fax',
-				'^[\\d\\-\\s\\(\\)\\+]*$',	//	Optional but with character restrictions
-				$org->contact_fax
+			)
+		);
+		
+		$elements=array_merge(
+			$elements,
+			array(
+				new TextFormElement(
+					'name',
+					'Name',
+					'^.+$',	//	Non-optional
+					$org->name
+				),
+				new TextFormElement(
+					'address1',
+					'Address',
+					'^.+$',	//	Non-optional
+					$org->address1,
+					'text',
+					'wide'
+				),
+				new TextFormElement(
+					'address2',
+					'Address (Continued)',
+					'',	//	Optional
+					$org->address2,
+					'text',
+					'wide'
+				),
+				new TextFormElement(
+					'city',
+					'City',
+					'^.+$',	//	Non-optional
+					$org->city
+				),
+				new ProvinceFormElement(
+					'territorial_unit',
+					'Province/State & Country',
+					'^.+$',	//	Non-optional
+					(is_null($org->territorial_unit) || ($org->territorial_unit===''))
+						?	$org->country
+						:	$org->country.' - '.$org->territorial_unit
+				),
+				new TextFormElement(
+					'postal_code',
+					'Postal/Zip Code',
+					'^\\s*[A-Za-z]\\d[A-Za-z](?:\\s|\\-)*\\d[A-Za-z]\\d|\\d{5}\\s*$',
+					$org->postal_code
+				),
+				new TextFormElement(
+					'url',
+					'Web Address',
+					'',	//	Optional
+					$org->url
+				),
+				new TextFormElement(
+					'phone',
+					'Phone',
+					'^[\\d\\-\\s\\(\\)\\+]+$',	//	Non-optional
+					$org->phone
+				),
+				new TextFormElement(
+					'fax',
+					'Fax',
+					'^[\\d\\-\\s\\(\\)\\+]*$',	//	Optional but with character restrictions
+					$org->fax
+				),
+				//	If the user is a sitewide
+				//	administrator they can change
+				//	the type of the organization,
+				//	otherwise they can just see
+				//	it
+				($user->type==='admin')
+					?	new DropDownFormElement(
+							'membership_type_id',
+							$org->membership_type_id,
+							'Type',
+							$dependencies['MISADBConn'],
+							false,
+							'SELECT `id`,`name` FROM `membership_types` ORDER BY `name`'
+						)
+					:	new TextElement(
+							'Type',
+							Organization::GetType($org->membership_type_id)
+						)
+				,
+				new TextFormElement(
+					'contact_name',
+					'Primary Contact Name',
+					'^.+$',	//	Non-optional
+					$org->contact_name
+				),
+				new TextFormElement(
+					'contact_title',
+					'Primary Contact Title',
+					'',	//	Optional
+					$org->contact_title
+				),
+				new TextFormElement(
+					'contact_email',
+					'Primary Contact E-Mail',
+					'^[^@]+@[^@]+\\.[^@]+$',	//	E-mails can't be encapsulated by regexes, but here's some basic requirements
+					$org->contact_email
+				),
+				new TextFormElement(
+					'contact_phone',
+					'Primary Contact Phone',
+					'^[\\d\\-\\s\\(\\)\\+]+$',	//	Non-optional
+					$org->contact_phone
+				),
+				new TextFormElement(
+					'contact_fax',
+					'Primary Contact Fax',
+					'^[\\d\\-\\s\\(\\)\\+]*$',	//	Optional but with character restrictions
+					$org->contact_fax
+				),
+				new TextFormElement(
+					'secondary_contact_name',
+					'Secondary Contact Name',
+					'',	//	Optional
+					$org->secondary_contact_name
+				),
+				new TextFormElement(
+					'secondary_contact_title',
+					'Secondary Contact Title',
+					'',	//	Optional
+					$org->secondary_contact_title
+				),
+				new TextFormElement(
+					'secondary_contact_email',
+					'Secondary Contact E-Mail',
+					'^(?:[^@]+@[^@]+\\.[^@]+)?$',	//	E-mails can't be encapsulated by regexes, but here's some basic requirements
+					$org->secondary_contact_email
+				),
+				new TextFormElement(
+					'secondary_contact_phone',
+					'Secondary Contact Phone',
+					'^[\\d\\-\\s\\(\\)\\+]*$',	//	Optional
+					$org->secondary_contact_phone
+				),
+				new TextFormElement(
+					'secondary_contact_fax',
+					'Secondary Contact Fax',
+					'^[\\d\\-\\s\\(\\)\\+]*$',	//	Optional but with character restrictions
+					$org->secondary_contact_fax
+				)
 			)
 		);
 		
@@ -235,7 +250,7 @@
 		
 			$elements[]=new CheckBoxFormElement(
 				'enabled',
-				$org->enabled,
+				$add || $org->enabled,
 				'Enabled'
 			);
 		
@@ -286,8 +301,9 @@
 			//	Get the values from the form
 			$arr=$form->GetValues();
 			
-			//	Set the ID
-			$arr['id']=$org->id;
+			//	Set the ID unless we're adding
+			//	a new organization
+			if (!$add) $arr['id']=$org->id;
 			
 			//	Do a quick scan to enforce null
 			//	vs. empty string
@@ -303,6 +319,23 @@
 			
 			}
 			
+			//	If mandatory information about
+			//	the secondary contact is missing,
+			//	ignore it
+			if (
+				is_null($arr['secondary_contact_name']) ||
+				is_null($arr['secondary_contact_email']) ||
+				is_null($arr['secondary_contact_phone'])
+			) {
+			
+				$arr['secondary_contact_name']=null;
+				$arr['secondary_contact_email']=null;
+				$arr['secondary_contact_phone']=null;
+				$arr['secondary_contact_fax']=null;
+				$arr['secondary_contact_title']=null;
+			
+			}
+			
 			//	Process Country/Province/State
 			//	drop-down's values
 			$obj=ProvinceFormElement::Split($arr['territorial_unit']);
@@ -312,24 +345,43 @@
 			//	Save the information to the
 			//	database
 			$temp=new Organization($arr);
-			$temp->Save();
+			$insert_id=$temp->Save();
+			
+			//	Redirect to the edit/view page for
+			//	the new organization on add
+			if ($add) {
+			
+				header(
+					'Location: '.$request->MakeLink(
+						'organization',
+						$insert_id
+					)
+				);
+				
+				exit();
+			
+			}
 		
 		}
 		
 		
 		$template->form=$form;
-		//	Get payment information
-		$template->payment_info=$org->PaymentHistory();
 		
+		$templates=array('form.phtml');
+		if (!$add) {
 		
-		Render(
-			$template,
-			array(
-				'form.phtml',
-				'org_users.phtml',
-				'payment_info.phtml'
-			)
-		);
+			//	Get payment information
+			$template->payment_info=$org->PaymentHistory();
+			//	Get users attached to this
+			//	organization
+			$template->users=$org->GetUsers();
+		
+			$templates[]='org_users.phtml';
+			$templates[]='payment_info.phtml';
+		
+		}
+		
+		Render($template,$templates);
 	
 	}
 	

@@ -3,6 +3,12 @@
 
 <h1>Users</h1>
 
+<?php	if (count($this->users)===0):	?>
+
+<div class="no_results">No users</div>
+
+<?php	else:	?>
+
 <table>
 
 	<thead>
@@ -60,3 +66,5 @@
 	</tbody>
 
 </table>
+
+<?php	endif;	?>

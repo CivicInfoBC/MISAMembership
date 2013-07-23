@@ -32,7 +32,11 @@
 		$curr_user=(
 			is_numeric($id) &&
 			(intval($id)==floatval($id))
-		) ? User::GetByID($id) : $user;
+		) ? User::GetByID(intval($id)) : $user;
+		
+		//	Make sure that user actually
+		//	exists
+		if (is_null($curr_user)) error(HTTP_BAD_REQUEST);
 	
 	}
 	

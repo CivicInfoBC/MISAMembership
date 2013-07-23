@@ -1,5 +1,11 @@
 <h1>Payment Information</h1>
 
+<?php	if (count($this->payment_info)===0):	?>
+
+<div class="no_results">No payments</div>
+
+<?php	else:	?>
+
 <table>
 
 	<thead>
@@ -49,3 +55,5 @@
 	</tbody>
 	
 </table>
+
+<?php	endif;	?>
