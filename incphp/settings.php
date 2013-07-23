@@ -157,6 +157,32 @@
 		);
 	
 	}
+	
+	
+	/**
+	 *	Gets the first setting.
+	 *
+	 *	\param [in] $arr
+	 *		An array of settings.
+	 *
+	 *	\return
+	 *		The first setting.
+	 */
+	function GetSettingValue ($arr) {
+	
+		if (is_null($arr)) return null;
+		
+		if (is_array($arr)) {
+		
+			if (count($arr)===0) return null;
+			
+			return $arr[0];
+		
+		}
+		
+		return $arr;
+	
+	}
 
 
 ?>

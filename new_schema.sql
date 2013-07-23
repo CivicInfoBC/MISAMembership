@@ -191,7 +191,7 @@ CREATE TABLE `users` (
 	--	and shall always be able to login unless
 	--	`enabled` is set to 0.
 	`org_id` int(11) unsigned DEFAULT NULL,
-	`activation_key` varchar(128) DEFAULT NULL,
+	`activation_key` varchar(32) DEFAULT NULL,
 	--	If set to 0 this user shall be unable to
 	--	login regardless of their organization's
 	--	status

@@ -1,6 +1,15 @@
+<?php	global $request;	?>
+
+
 <p>You must login to continue</p>
 
-<form method="post" action="?<?php	echo(htmlspecialchars(rawurlencode(LOGIN_KEY)));	?>=<?php	echo(htmlspecialchars(rawurlencode(TRUE_STRING)));	?>">
+<form method="post" action="?<?php
+
+	foreach ($_GET as $key=>$value) if (!(($key===LOGIN_KEY) || ($key===LOGOUT_KEY))) echo(htmlspecialchars(rawurlencode($key).'='.rawurlencode($value).'&'));
+	
+	echo(htmlspecialchars(rawurlencode(LOGIN_KEY).'='.rawurlencode(TRUE_STRING)));
+
+?>">
 
 	<?php	if (isset($this->message)):	?>
 	<p><?php	echo(htmlspecialchars($this->message));	?></p>
@@ -21,5 +30,7 @@
 	</div>
 	
 	<input type="submit" name="Login" value="Login" />
+	
+	<div><a href="<?php	echo(htmlspecialchars($request->MakeLink('forgot_password')));	?>">Forgot your password?</a></div>
 
 </form>

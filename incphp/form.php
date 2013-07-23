@@ -1612,6 +1612,44 @@
 	
 	
 	}
+	
+	
+	class HiddenFormElement extends DataFormElement {
+	
+	
+		public function __construct ($key, $value=null) {
+		
+			parent::__construct($key,$value);
+		
+		}
+		
+		
+		public function RenderVerify () {
+		
+			return null;
+		
+		}
+		
+		
+		public function Verify () {
+		
+			return true;
+		
+		}
+		
+		
+		public function Render () {
+		
+			return sprintf(
+				'<input type="hidden" name="%1$s" value="%2$s" />',
+				htmlspecialchars($this->key),
+				htmlspecialchars($this->value)
+			);
+		
+		}
+	
+	
+	}
 
 
 ?>

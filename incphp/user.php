@@ -978,10 +978,44 @@
 			
 			//	User is allowed to login
 			
+			//	Create session
+			$user->CreateSession();
+			
+			//	If $remember_me is null, bypass setting
+			//	cookie
+			if (!is_null($remember_me)) self::SetCookie($user->session_key,$remember_me);
+			
+			//	Get final login success code
+			$user->Check($code);
+			
+			//	Return
+			return new LoginAttempt(
+				$code,
+				$user
+			);
+		
+		}
+		
+		
+		/**
+		 *	Creates the user a new login session.
+		 *
+		 *	\param [in] $real_ip
+		 *		The IP the user is actually connecting
+		 *		from.  Defaults to \em null.  If \em null
+		 *		the IP of the current request's remote
+		 *		host shall be used.
+		 */
+		public function CreateSession ($real_ip=null) {
+		
+			//	Get database access
+			global $dependencies;
+			$conn=$dependencies[USER_DB];
+		
 			//	Generate 128-bit cryptographically
 			//	secure random number to use as the
 			//	user's session key
-			$user->session_key=bin2hex(CryptoRandom(128/8));
+			$this->session_key=bin2hex(CryptoRandom(128/8));
 			
 			//	Deduce the time at which the session
 			//	key we just generated ought to
@@ -991,8 +1025,8 @@
 			//	possible
 			if ($expiry<0) $expiry=PHP_INT_MAX;
 			//	Set
-			$user->session_expiry=new DateTime();
-			$user->session_expiry->setTimestamp($expiry);
+			$this->session_expiry=new DateTime();
+			$this->session_expiry->setTimestamp($expiry);
 			
 			//	Create session in database
 			if ($conn->query(
@@ -1014,29 +1048,95 @@
 						NOW(),
 						\'%4$s\'
 					)',
-					$conn->real_escape_string($user->session_key),
-					$conn->real_escape_string($user->id),
+					$conn->real_escape_string($this->session_key),
+					$conn->real_escape_string($this->id),
 					$conn->real_escape_string(
 						is_null($real_ip)
 							?	$_SERVER['REMOTE_ADDR']
 							:	$real_ip
 					),
-					$conn->real_escape_string($user->session_expiry->format('Y-m-d H:i:s'))
+					$conn->real_escape_string($this->session_expiry->format('Y-m-d H:i:s'))
 				)	
 			)===false) throw new Exception($conn->error);
+		
+		}
+		
+		
+		/**
+		 *	Sets this user's password.
+		 *
+		 *	\param [in] $password
+		 *		The password to set this user's password
+		 *		to.
+		 */
+		public function SetPassword ($password) {
+		
+			if (!is_string($password)) throw new Exception('Type mismatch');
 			
-			//	If $remember_me is null, bypass setting
-			//	cookie
-			if (!is_null($remember_me)) self::SetCookie($user->session_key,$remember_me);
+			if ($password==='') throw new Exception('No password');
 			
-			//	Get final login success code
-			$user->Check($code);
+			//	Hash
+			$this->password=self::PasswordHash($password);
 			
-			//	Return
-			return new LoginAttempt(
-				$code,
-				$user
-			);
+			//	Get database access
+			global $dependencies;
+			$conn=$dependencies[USER_DB];
+			
+			//	Update the database
+			if ($conn->query(
+				sprintf(
+					'UPDATE `users` SET `password`=\'%s\' WHERE `id`=\'%s\'',
+					$conn->real_escape_string($this->password),
+					$conn->real_escape_string($this->id)
+				)
+			)===false) throw new Exception($conn->error);
+		
+		}
+		
+		
+		/**
+		 *	Generates an activation key for this user and
+		 *	stores it in the database.
+		 */
+		public function GenerateActivationKey () {
+		
+			//	Get database access
+			global $dependencies;
+			$conn=$dependencies[USER_DB];
+			
+			//	Get 128-bit cryptographically-secure
+			//	PRNG
+			$this->activation_key=bin2hex(CryptoRandom(128/8));
+			
+			//	Store in database
+			if ($conn->query(
+				sprintf(
+					'UPDATE `users` SET `activation_key`=\'%s\' WHERE `id`=\'%s\'',
+					$conn->real_escape_string($this->activation_key),
+					$conn->real_escape_string($this->id)
+				)
+			)===false) throw new Exception($conn->error);
+		
+		}
+		
+		
+		/**
+		 *	Clears the activation key once it has been
+		 *	consumed.
+		 */
+		public function ClearActivationKey () {
+		
+			//	Get database access
+			global $dependencies;
+			$conn=$dependencies[USER_DB];
+			
+			//	Update DB
+			if ($conn->query(
+				sprintf(
+					'UPDATE `users` SET `activation_key`=NULL WHERE `id`=\'%s\'',
+					$conn->real_escape_string($this->id)
+				)
+			)===false) throw new Exception($conn->error);
 		
 		}
 		

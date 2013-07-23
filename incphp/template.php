@@ -79,6 +79,21 @@
 			while (count($this->__files)!==0) $this->Next();
 		
 		}
+		
+		
+		public function Get ($file) {
+		
+			ob_start();
+			
+			$this->Render($file);
+			
+			$str=ob_get_contents();
+			
+			ob_end_clean();
+			
+			return $str;
+		
+		}
 	
 	
 	}
