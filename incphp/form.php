@@ -1323,7 +1323,7 @@
 				//	Ignore fourth parameter,
 				//	populate from array
 				
-				foreach ($conn_or_arr as $key=>$label) $this->arr[$key]=$label;
+				foreach ($conn_or_arr as $key=>$value) $this->arr[$key]=$value;
 			
 			} else {
 			

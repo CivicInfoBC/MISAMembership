@@ -342,7 +342,14 @@
 		//	the same username/e-mail cannot
 		//	be simultaneously inserted
 		$conn=$dependencies['MISADBConn'];
-		if ($conn->query('LOCK TABLES `users` WRITE,`organizations` WRITE')===false) throw new Exception($conn->error);
+		if ($conn->query(
+			'LOCK TABLES
+						`users` WRITE,
+						`organizations` READ,
+						`payment` READ,
+						`membership_years` READ,
+						`membership_types` READ'
+		)===false) throw new Exception($conn->error);
 		
 		if (!(
 			is_null(User::GetByUsername($primary->username)) &&
