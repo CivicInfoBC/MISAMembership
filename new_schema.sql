@@ -237,6 +237,7 @@ CREATE TABLE `api_keys` (
 	--	so putting this in the orgs
 	--	table would be inadequate
 	`org_id` int(11) unsigned,
+	`notes` text,
 	PRIMARY KEY (`key`),
 	FOREIGN KEY (`org_id`) REFERENCES `organizations`(`id`)
 );
