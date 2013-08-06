@@ -1,0 +1,35 @@
+<?php	global $request;	?>
+
+<p>Welcome!</p>
+
+<p>
+
+	Thank you very much for applying to join the Municipal Information Systems Association of British Columbia (MISA BC).
+	
+	Your application has been approved, and we look forward to your participation in our community.
+	
+</p>
+
+<p>
+
+	To pay your first year's membership dues and activate your account, please <a href="<?php
+
+		echo(
+			htmlspecialchars(
+				$request->MakeLink()
+			)
+			
+		);
+
+	?>">log into our website.</a>
+	
+</p>
+
+<p>If you have any questions, please contact the membership chair at <a href="mailto:membership@misa.bc.ca">membership@misa.bc.ca</a></p>
+
+<p>
+
+	Yours,<br />
+	MISA BC Executive
+	
+</p>

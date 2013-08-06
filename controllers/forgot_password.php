@@ -155,7 +155,13 @@
 				$mail->from=GetSettingValue(GetSetting('mail_from'));
 				$mail->subject='Password Reset';
 				$mail->is_html=true;
-				$mail->Send($template,'password_reset_email.phtml');
+				$mail->Send(
+					$template,
+					array(
+						'email.phtml',
+						'password_reset_email.phtml'
+					)
+				);
 				
 				Render($template,'password_reset_sent.phtml');
 				

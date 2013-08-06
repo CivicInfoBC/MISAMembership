@@ -1,0 +1,11 @@
+<?php	global $request;	?>
+
+<p>A new organization has applied for membership.<p>
+
+<p>The organization is <b><?php	echo(htmlspecialchars($this->organization->name));	?></b>.</p>
+
+<p>The membership type chosen is <b><?php	echo(htmlspecialchars($this->organization->membership_type));	?></b>.</p>
+
+<p><a href="<?php	echo(htmlspecialchars($request->MakeLink('organization',$this->organization->id)));	?>">Click here to view the organization's details.</a></p>
+
+<p><a href="<?php	echo(htmlspecialchars($request->MakeLink('pending')));	?>">Click here to approve the organization.</a></p>

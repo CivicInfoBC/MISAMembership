@@ -64,6 +64,8 @@
 				$this->__template_dir,
 				$file
 			));
+			
+			$this->Next();
 		
 		}
 		
@@ -76,7 +78,7 @@
 		
 			$this->__files=$file;
 			
-			while (count($this->__files)!==0) $this->Next();
+			$this->Next();
 		
 		}
 		

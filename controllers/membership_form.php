@@ -399,8 +399,39 @@
 		//	If no errors, display complete
 		//	template, otherwise re-render the
 		//	form
-		if (count($template->messages)===0) Render($template,'membership_complete.phtml');
-		else goto display_form;
+		if (count($template->messages)===0) {
+		
+			require_once(WHERE_PHP_INCLUDES.'mail.php');
+			require_once(WHERE_LOCAL_PHP_INCLUDES.'settings.php');
+		
+			//	Send email to administrators
+			//	nominated to receive notifications
+			//	of new applications
+			$email=new EMail();
+			$email->to=GetSetting('membership_application_email');
+			$email->is_html=true;
+			$email->subject='New Membership Application';
+			$email->from=GetSettingValue(GetSetting('mail_from'));
+			$email_template=new Template(WHERE_TEMPLATES);
+			$org->membership_type=Organization::GetType($org->membership_type_id);
+			$email_template->organization=$org;
+			$email_template->primary=$primary;
+			if (isset($secondary)) $email_template->secondary=$secondary;
+			$email->Send(
+				$email_template,
+				array(
+					'email.phtml',
+					'email_membership_application.phtml'
+				)
+			);
+		
+			Render($template,'membership_complete.phtml');
+			
+		} else {
+		
+			goto display_form;
+			
+		}
 	
 	} else {
 	

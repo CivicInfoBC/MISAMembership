@@ -52,6 +52,33 @@
 	
 	
 	/**
+	 *	Returns the value of \em int as an integer,
+	 *	or \em null if \em int is not an integer.
+	 *
+	 *	\param [in] $int
+	 *		The object to retrieve the integer
+	 *		value of.
+	 *
+	 *	\return
+	 *		An integer which is the integer value
+	 *		of \em int, or \em null if \em int cannot
+	 *		be represented as an integer.
+	 */
+	function to_int ($int) {
+	
+		if (is_integer($int)) return $int;
+		
+		if (
+			is_numeric($int) &&
+			(($intval=intval($int))==floatval($int))
+		) return $intval;
+		
+		return null;
+	
+	}
+	
+	
+	/**
 	 *	Formats a time range in such a way
 	 *	that information is not duplicated.
 	 *

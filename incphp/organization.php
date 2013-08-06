@@ -153,9 +153,6 @@
 		 */
 		public static function GetType ($type_id) {
 		
-			//	Guard against bad types
-			if (!is_integer($type_id)) return null;
-		
 			//	Fetch database connection
 			global $dependencies;
 			$conn=$dependencies[ORG_DB];

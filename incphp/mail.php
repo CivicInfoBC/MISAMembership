@@ -42,6 +42,8 @@
 			
 			}
 			
+			if (is_null($to) || ($to==='')) return;
+			
 			$headers='';
 			
 			if (isset($this->from)) $headers='From: '.$this->from."\r\n";

@@ -74,6 +74,84 @@
 	
 	if (isset($template->year)) {
 	
+		$amount=$user->organization->GetPrice();
+	
+		//	Insert row into the database
+		$conn=$dependencies['MISADBConn'];
+		if (
+			($conn->query('LOCK TABLES `payment` WRITE')===false) ||
+			(($query=$conn->query(
+				sprintf(
+					'SELECT * FROM `payment` WHERE `org_id`=\'%s\' AND `membership_year_id`=\'%s\'',
+					$conn->real_escape_string($user->organization->id),
+					$conn->real_escape_string($template->year->id)
+				)
+			))===false)
+		) throw new Exception($conn->error);
+		
+		//	Insert a row if none exists
+		if ($query->num_rows===0) {
+		
+			if ($conn->query(
+				sprintf(
+					'INSERT INTO `payment` (
+						`org_id`,
+						`membership_type_id`,
+						`membership_year_id`,
+						`type`,
+						`created`,
+						`subtotal`,
+						`tax`,
+						`total`
+					) VALUES (
+						\'%s\',
+						\'%s\',
+						\'%s\',
+						\'%s\',
+						NOW(),
+						\'%s\',
+						\'%s\',
+						\'%s\'
+					)',
+					$conn->real_escape_string($user->organization->id),
+					$conn->real_escape_string($user->organization->membership_type_id),
+					$conn->real_escape_string($template->year->id),
+					$conn->real_escape_string('membership renewal'),
+					$conn->real_escape_string(0.00),
+					$conn->real_escape_string(0.00),
+					$conn->real_escape_string($amount)
+				)
+			)===false) throw new Exception($conn->error);
+		
+		//	Otherwise make sure the created time
+		//	and amounts are acceptable
+		} else {
+		
+			$row=new MySQLRow($query);
+			
+			if ($conn->query(
+				sprintf(
+					'UPDATE
+						`payment`
+					SET
+						`created`=NOW(),
+						`subtotal`=\'%s\',
+						`tax`=\'%s\',
+						`total`=\'%s\'
+					WHERE
+						`id`=\'%s\'',
+					$conn->real_escape_string(0.00),
+					$conn->real_escape_string(0.00),
+					$conn->real_escape_string($amount),
+					$conn->real_escape_string($row['id'])
+				)
+			)===false) throw new Exception($conn->error);
+		
+		}
+		
+		//	Unlock
+		if ($conn->query('UNLOCK TABLES')===false) throw new Exception($conn->error);
+	
 		require_once(WHERE_PHP_INCLUDES.'e-xact.php');
 		
 		$template->payment=new EXact();
@@ -88,6 +166,11 @@
 		$template->payment->amount=$user->organization->GetPrice();
 		$template->payment->id=$user->organization->id.'|'.$template->year->id;
 		$template->payment->code='MISA-DUES';
+		
+		if (
+			($user->type==='admin') &&
+			($request->GetQueryString('test')===TRUE_STRING)
+		) $template->payment->is_test=true;
 		
 		Render($template,'payment.phtml');
 	
