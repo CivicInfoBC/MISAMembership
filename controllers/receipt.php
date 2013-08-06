@@ -1,6 +1,11 @@
 <?php
 
 
+	//	Don't do any further processing if this is
+	//	an e-xact test request
+	if ($request->GetQueryString('network_test')==='true') exit();
+
+
 	require_once(WHERE_PHP_INCLUDES.'e-xact.php');
 	
 	
