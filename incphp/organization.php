@@ -880,8 +880,8 @@
 								`membership_years`.`start`<=NOW() AND
 								`payment`.`paid`=1
 							ORDER BY
-								`membership_years`.`start` ASC
-							LIMIT 1,1
+								`membership_years`.`start` DESC
+							LIMIT 1
 						) `membership_years`',
 					$conn->real_escape_string($this->id)
 				)
