@@ -559,3 +559,13 @@ table a {
 	text-align: center;
 
 }
+
+
+.notification {
+
+	text-align: center;
+	padding: 5px;
+	border: 1px black solid;
+	background: #FAFA80;
+
+}

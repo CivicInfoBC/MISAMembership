@@ -283,21 +283,49 @@
 				
 					$user=$user->user;
 				
-				//	Superusers can login, but only if the
-				//	failure code specifies that their organization
-				//	hasn't paid, and in that case they get
-				//	unconditionally redirected to the payment
-				//	page
-				} else if (
-					($user->code===4) &&
-					($user->user->type==='superuser')
-				) {
+				//	BUSINESS LOGIC:
+				//
+				//	Users/organizations/etc. get a one year
+				//	"grace period".  I.e. in the calendar year
+				//	after their last payment they can login
+				//	whether their organization has paid for that
+				//	year or not.
+				} else if ($user->code===4) {
 				
-					$user=$user->user;
+					//	Get amount of time since last payment
+					$last_payment=$user->user->organization->UnpaidDuration();
 					
-					require(WHERE_CONTROLLERS.PAYMENT_CONTROLLER);
+					//	If organization has never paid, disallow login,
+					//	otherwise only disallow login if it's been over
+					//	a year since the last paid year ended
+					if (
+						is_null($last_payment) ||
+						($last_payment>(60*60*24*365))
+					) {
 					
-					exit();
+						//	If the user is a superuser, they may
+						//	login, but are "jailed" to the payment
+						//	page
+						if ($user->user->type==='superuser') {
+						
+							$user=$user->user;
+							
+							require(WHERE_CONTROLLERS.PAYMENT_CONTROLLER);
+						
+							exit();
+						
+						//	Otherwise they cannot login
+						} else {
+						
+							goto login_failure;
+						
+						}
+					
+					} else {
+					
+						$user=$user->user;
+					
+					}
 				
 				} else {
 				
@@ -328,6 +356,20 @@
 				exit();
 			
 			}
+			
+			//	Should a prompt for the user to pay be
+			//	displayed?
+			$display_payment_prompt=!(
+				is_null($user) ||
+				!(
+					($user->type==='admin') ||
+					($user->type==='superuser')
+				) ||
+				is_null($user->organization) ||
+				$user->organization->perpetual ||
+				(count($user->organization->UnpaidYears())===0) ||
+				($request->GetController()==='payment')
+			);
 			
 			//	Route
 			if (

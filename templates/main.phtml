@@ -4,6 +4,7 @@
 	global $header;
 	global $user;
 	global $title;
+	global $display_payment_prompt;
 
 ?><!doctype html>
 
@@ -182,6 +183,20 @@
 		</div>
 		
 		<div id="main">
+		
+			<?php	if (isset($display_payment_prompt) && $display_payment_prompt):	?>
+			<div class="notification">You may pay membership dues, <a href="<?php
+			
+				echo(
+					htmlspecialchars(
+						$request->MakeLink(
+							'payment'
+						)
+					)
+				);
+			
+			?>">click here</a> to do so</div>
+			<?php	endif;	?>
 		
 			<?php	if (!is_null($title)):	?>
 			<h1><?php	echo(htmlspecialchars($title));	?></h1>

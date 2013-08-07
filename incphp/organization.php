@@ -840,6 +840,71 @@
 		
 		
 		/**
+		 *	Retrieves the amount of time this organization
+		 *	has been unpaid.
+		 *
+		 *	\return
+		 *		An integer representing the number of seconds
+		 *		since this organization last paid membership
+		 *		dues.  Returns zero if this organization has
+		 *		paid for this year.  Returns \em null if this
+		 *		organization has never paid.
+		 */
+		public function UnpaidDuration () {
+		
+			//	Get database access
+			global $dependencies;
+			$conn=$dependencies[ORG_DB];
+			
+			//	Query for duration
+			$query=$conn->query(
+				sprintf(
+					'SELECT
+						UNIX_TIMESTAMP(NOW())-UNIX_TIMESTAMP(`end`) AS `duration`
+					FROM
+						(
+							SELECT
+								`membership_years`.`end`
+							FROM
+								`membership_years` LEFT OUTER JOIN
+								(
+									SELECT
+										`membership_year_id`,
+										`paid`
+									FROM
+										`payment`
+									WHERE
+										`org_id`=\'%s\'
+								) `payment` ON `payment`.`membership_year_id`=`membership_years`.`id`
+							WHERE
+								`membership_years`.`start`<=NOW() AND
+								`payment`.`paid`=1
+							ORDER BY
+								`membership_years`.`start` ASC
+							LIMIT 1,1
+						) `membership_years`',
+					$conn->real_escape_string($this->id)
+				)
+			);
+			
+			//	Throw on error
+			if ($query===false) throw new Exception($conn->error);
+			
+			//	Return immediately if the organization
+			//	has never paid
+			if ($query->num_rows===0) return null;
+			
+			$row=new MySQLRow($query);
+			
+			$duration=$row['duration']->GetValue();
+			
+			//	Return duration
+			return ($duration<0) ? 0 : $duration;
+		
+		}
+		
+		
+		/**
 		 *	Gets an iterator which allows you to
 		 *	traverse the various properties of the
 		 *	organization.
