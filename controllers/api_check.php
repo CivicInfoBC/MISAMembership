@@ -5,7 +5,7 @@
 	//
 	//	{
 	//		"action":	"check",
-	//		"username":	<Username or e-mail to check>
+	//		"email":	<E-Mail to check>
 	//	}
 	//
 	//	And the response shall be:
@@ -22,13 +22,13 @@
 
 
 	//	Verify needed argument is present
-	if (!isset($api_request->username)) api_error(HTTP_BAD_REQUEST);
+	if (!isset($api_request->email)) api_error(HTTP_BAD_REQUEST);
 	
 	
 	//	Determine whether specified user
 	//	exists or not
 	$exists=!is_null(
-		$user=User::GetByUsername($api_request->username)
+		$user=User::GetByUsername($api_request->email)
 	);
 	
 	$api_result=array('exists' => $exists);

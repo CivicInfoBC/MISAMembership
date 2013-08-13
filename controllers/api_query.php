@@ -115,8 +115,8 @@
 		//	to retrieve.
 		//
 		//	An API query may be made for a particular user
-		//	by setting the "username" property to the username
-		//	or e-mail of the user to retrieve.
+		//	by setting the "email" property to the e-mail
+		//	of the user to retrieve.
 		//
 		//	The response shall be:
 		//
@@ -146,12 +146,12 @@
 			$api_result=($api_request->type==='user') ? User::GetByID($api_request->id) : Organization::GetByID($api_request->id);
 		
 		} else if (
-			isset($api_request->username) &&
-			is_string($api_request->username) &&
+			isset($api_request->email) &&
+			is_string($api_request->email) &&
 			($api_request->type==='user')
 		) {
 		
-			$api_result=User::GetByUsername($api_request->username);
+			$api_result=User::GetByUsername($api_request->email);
 		
 		} else {
 		

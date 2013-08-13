@@ -5,13 +5,13 @@
 	//	be as follows:
 	//
 	//
-	//	To log a user in from username
+	//	To log a user in from e-mail
 	//	and password:
 	//
 	//	{
 	//		"action":		"login",
 	//		"api_key":		<API key of API consumer>,
-	//		"username":		<Username user supplied>,
+	//		"email":		<E-Mail user supplied>,
 	//		"password":		<Plaintext password user supplied>,
 	//		"real_ip":		<IP request is being made from>
 	//	}
@@ -78,15 +78,15 @@
 		//	Check individual fields
 		//	and decide how to handle
 		
-		//	Username/password login
+		//	E-Mail/password login
 		if (
-			isset($api_request->username) &&
+			isset($api_request->email) &&
 			isset($api_request->password)
 		) {
 		
 			//	Perform login
 			$api_result=User::Login(
-				$api_request->username,
+				$api_request->email,
 				$api_request->password,
 				null,
 				$api_request->real_ip
