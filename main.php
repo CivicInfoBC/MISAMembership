@@ -158,6 +158,10 @@
 	try {
 	
 	
+		//	Get top menu via API
+		$top_menu=GetTopMenu();
+	
+	
 		//	Initialize dependency container
 		//	which allows dependencies to be
 		//	resolved and retrieved without
