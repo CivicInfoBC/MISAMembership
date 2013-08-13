@@ -62,6 +62,9 @@
 	//												 expire formatted as "Y,m,d,H,i,s",
 	//												 only sent when creating a new session.>
 	//						}
+	//		"duration":		<Only set if "code" is 4, indicates the number of seconds
+	//						 since the user's organization last paid dues, if the organization
+	//						 has never paid, is null>
 	//	}
 	//
 	//	The "logout" request shall send no reply.
@@ -108,8 +111,21 @@
 		
 		}
 		
+		if ($api_result->code===4) {
+		
+			$send_duration=true;
+			$duration=$api_result->user->organization->UnpaidDuration();
+		
+		} else {
+		
+			$send_duration=false;
+		
+		}
+		
 		//	Serialize
 		$api_result=$api_result->ToArray();
+		
+		if ($send_duration) $api_result['duration']=$duration;
 	
 	//	Logout
 	//
