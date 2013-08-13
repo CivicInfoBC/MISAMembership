@@ -128,6 +128,7 @@
 	def('LOGOUT_KEY','logout');
 	def('PASSWORD_KEY','password');
 	def('USERNAME_KEY','username');
+	def('REMEMBER_ME_KEY','remember_me');
 	def('SESSION_KEY_KEY','session_key');	//	Key in the query string for cross-site login
 	
 	
@@ -150,6 +151,7 @@
 	require_once(WHERE_PHP_INCLUDES.'utils.php');					//	Misc utilities
 	require_once(WHERE_PHP_INCLUDES.'html_element.php');			//	HTML element
 	require_once(WHERE_LOCAL_PHP_INCLUDES.'user.php');				//	User/login abstraction/encapsulation
+	require_once(WHERE_LOCAL_PHP_INCLUDES.'top_menu.php');			//	Top menu JSON consumer
 	
 	
 	//	Error handling
@@ -228,7 +230,8 @@
 			
 				$user=User::Login(
 					$_POST[USERNAME_KEY],
-					$_POST[PASSWORD_KEY]
+					$_POST[PASSWORD_KEY],
+					isset($_POST[REMEMBER_ME_KEY]) && ($_POST[REMEMBER_ME_KEY]===TRUE_STRING)
 				);
 				
 				$verbose=true;

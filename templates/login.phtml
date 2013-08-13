@@ -29,6 +29,13 @@
 		
 	</div>
 	
+	<div>
+	
+		<div>Remain Logged In:</div>
+		<div><input type="checkbox" name="<?php	echo(htmlspecialchars(REMEMBER_ME_KEY));	?>" value="<?php	echo(htmlspecialchars(TRUE_STRING));	?>" /></div>
+	
+	</div>
+	
 	<input type="submit" name="Login" value="Login" />
 	
 	<div><a href="<?php	echo(htmlspecialchars($request->MakeLink('forgot_password')));	?>">Forgot your password?</a></div>
