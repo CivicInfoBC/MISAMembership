@@ -1,123 +1,135 @@
 <?php
 
 
-	//	Don't do any further processing if this is
-	//	an e-xact test request
-	if ($request->GetQueryString('network_test')==='true') exit();
-
-
-	require_once(WHERE_PHP_INCLUDES.'e-xact.php');
+	//	Obtain input
+	//
+	//	I.e. payment ID
+	$called=true;	//	Whether this controllor was invoked by another controller
+	if (!isset($payment_id)) {
+	
+		$called=false;
+	
+		if (!(
+			($user->type==='superuser') ||
+			($user->type==='admin')
+		)) error(HTTP_FORBIDDEN);
+		
+		if (!(
+			!is_null($request->GetArg(0)) &&
+			is_numeric($request->GetArg(0)) &&
+			(($payment_id=intval($request->GetArg(0)))==floatval($request->GetArg(0)))
+		)) error(HTTP_BAD_REQUEST);
+	
+	}
 	
 	
-	//	Verify the request
-	if (!(
-		//	Must be a POST request
-		is_post() &&
-		//	Response code must be set and
-		//	must be an integer
-		isset($_POST['x_response_code']) &&
-		!is_null($code=to_int($_POST['x_response_code'])) &&
-		//	Transaction ID must be set
-		isset($_POST['x_trans_id']) &&
-		//	Customer ID must be set and
-		//	match a certain structure
-		isset($_POST['x_cust_id']) &&
-		(preg_match(
-			'/^(\\d+)\\|(\\d+)$/u',
-			$_POST['x_cust_id'],
-			$matches
-		)===1) &&
-		//	Card holder's name must be set
-		//	and not be the empty string
-		isset($_POST['CardHoldersName']) &&
-		($_POST['CardHoldersName']!=='') &&
-		//	Transaction card type must be set
-		//	and not be the empty string
-		isset($_POST['TransactionCardType']) &&
-		($_POST['TransactionCardType']!=='') &&
-		//	Hash must be set and not be the
-		//	empty string
-		isset($_POST['x_MD5_Hash']) &&
-		($_POST['x_MD5_Hash']!=='') &&
-		//	Amount must be set and must be a
-		//	float
-		isset($_POST['x_amount']) &&
-		is_numeric($_POST['x_amount']) &&
-		//	Verify hash
-		EXact::Verify(
-			$_POST['x_MD5_Hash'],
-			$amount=floatval($_POST['x_amount']),
-			$_POST['x_trans_id']
-		)
-	)) error(HTTP_BAD_REQUEST);
-	
-	
-	//	Only proceed if the transaction was
-	//	successful and was not a test
-	if (
-		($code!==1) ||
-		(
-			isset($_POST['x_test_request']) &&
-			($_POST['x_test_request']==='TRUE')
-		)
-	) exit();
-	
-	
-	//	Get the corresponding row from the database
-	
+	//	Get database access
 	$conn=$dependencies['MISADBConn'];
 	
-	if (
-		//	Lock
-		($conn->query('LOCK TABLES `payment` WRITE')===false) ||
-		//	Get row
-		(($query=$conn->query(
-			sprintf(
-				'SELECT * FROM `payment` WHERE `org_id`=\'%s\' AND `membership_year_id`=\'%s\'',
-				$conn->real_escape_string($matches[1]),
-				$conn->real_escape_string($matches[2])
-			)
-		))===false)
-	) throw new Exception($conn->error);
 	
-	//	Error out if row does not exist
+	//	Attempt to obtain that payment from
+	//	the database
+	if (($query=$conn->query(
+		sprintf(
+			'SELECT * FROM `payment` WHERE `id`=\'%s\'',
+			$conn->real_escape_string($payment_id)
+		)
+	))===false) throw new Exception($conn->error);
+	
 	if ($query->num_rows===0) error(HTTP_BAD_REQUEST);
 	
-	$row=new MySQLRow($query);
+	$template=new Template(WHERE_TEMPLATES);
 	
-	//	Do some checking
-	if (
-		//	If the totals do not match up...
-		($row['total']->GetValue()!==$amount) ||
-		//	...or the payment has already been
-		//	made...
-		$row['paid']->GetValue()
-	//	...error
-	) error(HTTP_BAD_REQUEST);
+	$template->row=new MySQLRow($query);
 	
-	if (
-		//	Mark as paid
-		($conn->query(
+	//	If the payment-in-question hasn't been
+	//	paid, that's an error -- there's no receipt
+	//	to generate because there's been no payment
+	if (!$template->row['paid']->GetValue()) error(HTTP_BAD_REQUEST);
+	
+	//	Permissions check:
+	//
+	//	Only administrators or superusers of the
+	//	organization-in-question can view receipts
+	if (!(
+		$called ||
+		($user->type==='admin') ||
+		(
+			!is_null($user->organization) &&
+			($user->organization->id===$template->row['org_id']->GetValue())
+		)
+	)) error(HTTP_FORBIDDEN);
+	
+	
+	//	Get information about the organization
+	$template->organization=Organization::GetByID($template->row['org_id']->GetValue());
+	if (is_null($template->organization)) error(HTTP_BAD_REQUEST);
+	
+	
+	//	Get information about the membership year
+	//	(if there is one)
+	if (!is_null($template->row['membership_year_id']->GetValue())) {
+		
+		if (($query=$conn->query(
 			sprintf(
-				'UPDATE
-					`payment`
-				SET
-					`paid`=\'1\',
-					`cardname`=\'%s\',
-					`paymethod`=\'%s\',
-					`amountpaid`=\'%s\',
-					`datepaid`=NOW()
-				WHERE
-					`id`=\'%s\'',
-				$conn->real_escape_string($_POST['CardHoldersName']),
-				$conn->real_escape_string($_POST['TransactionCardType']),
-				$conn->real_escape_string($amount),
-				$conn->real_escape_string($row['id'])
+				'SELECT * FROM `membership_years` WHERE `id`=\'%s\'',
+				$conn->real_escape_string($template->row['membership_year_id']->GetValue())
 			)
-		)===false) ||
-		//	Unlock
-		($conn->query('UNLOCK TABLES')===false)
-	) throw new Exception($conn->error);
+		))===false) throw new Exception($conn->query);
+		
+		if ($query->num_rows===0) error(HTTP_BAD_REQUEST);
+		
+		$template->membership_year=new MySQLRow($query);
+		
+	}
+	
+	
+	//	Get information about the membership type
+	//	(if there is one)
+	if (!is_null($template->row['membership_type_id']->GetValue())) {
+	
+		$template->membership_type=Organization::GetType(
+			$template->row['membership_type_id']->GetValue()
+		);
+	
+	}
+	
+	
+	//	Break the total/subtotal/tax out (if necessary)
+	$template->total=$template->row['total']->GetValue();
+	$template->tax=$template->total-($template->total/(1+GST_RATE));
+	$template->subtotal=$template->total-$template->tax;
+	
+	
+	//	If it's a POST request, it's an e-xact
+	//	postback, and we should send an e-mail
+	if (is_post()) {
+	
+		//	Make sure the x_email field is set -- we'll need it
+		//	to send the e-mail
+		if (!isset($_POST['x_email']) || ($_POST['x_email']==='')) error(HTTP_BAD_REQUEST);
+		
+		require_once(WHERE_PHP_INCLUDES.'mail.php');
+		require_once(WHERE_LOCAL_PHP_INCLUDES.'settings.php');
+		
+		$email=new EMail();
+		$email->to=$_POST['x_email'];
+		$email->is_html=true;
+		$email->subject='Membership Dues Payment';
+		$email->from=GetSettingValue(GetSetting('mail_from'));
+		$template->email=true;
+		$email->Send(
+			$template,
+			'receipt.phtml'
+		);
+	
+	//	Otherwise we just render the receipt
+	} else {
+	
+		$template->email=false;
+		$template->Render('receipt.phtml');
+	
+	}
 
 
 ?>

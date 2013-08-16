@@ -53,11 +53,15 @@
 		
 	} else if (is_post()) {
 	
-		if (!isset($_POST['year'])) error(HTTP_BAD_REQUEST);
+		if (!(
+			isset($_POST['year']) &&
+			is_numeric($_POST['year']) &&
+			(intval($_POST['year'])==floatval($_POST['year']))
+		)) error(HTTP_BAD_REQUEST);
 		
 		foreach ($template->years as $x) {
 		
-			if ($x->id===$_POST['year']) {
+			if ($x->id===intval($_POST['year'])) {
 			
 				$template->year=$x;
 				

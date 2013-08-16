@@ -1,0 +1,294 @@
+<?php	global $request;	?><!doctype html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+
+	<head>
+	
+		<?php	if (!$this->email):	?>
+		<meta http-equiv="content-type" content="application/xhmtl+xml; charset=UTF-8" />
+	
+		<title>MISA BC - Receipt</title>
+		<?php	endif;	?>
+		
+		<link rel="stylesheet" type="text/css" href="https://www.civicinfo.bc.ca/style/reset.css" />
+		
+		<style type="text/css">
+		
+			body {
+			
+				font-family: Calibri, Arial, sans-serif;
+				font-size: 14pt;
+			
+			}
+			
+			pre {
+			
+				font-family: Consolas, "Courier New", monospace;
+				font-size: 12pt;
+				text-align: center;
+			
+			}
+		
+			body > div {
+			
+				width: 960px;
+			
+			}
+			
+			body > div > * {
+			
+				margin-top: 10px;
+			
+			}
+			
+			img {
+			
+				display: block;
+			
+			}
+			
+			table, img, body > div {
+			
+				margin-left: auto;
+				margin-right: auto;
+			
+			}
+			
+			tr {
+			
+				margin-top: 5px;
+			
+			}
+			
+			td {
+			
+				padding: 5px;
+			
+			}
+			
+			<?php	if (!$this->email):	?>
+			td:first-child {
+			
+				font-weight: bold;
+			
+			}
+			<?php	endif;	?>
+			
+			h1 {
+			
+				text-align: center;
+				font-weight: bold;
+				font-size: 18pt;
+			
+			}
+		
+		</style>
+	
+	</head>
+
+	
+	<body>
+	
+	
+		<div>
+		
+		
+			<?php	if ($this->email):	?>
+			<center>
+			<?php	endif;	?>
+			<img src="<?php	echo(htmlspecialchars($request->MakeFileLink(array('images','logobg.png'))));	?>" />
+			<?php	if ($this->email):	?>
+			</center>
+			<?php	endif;	?>
+			
+			
+			<?php	if ($this->email):	?>
+			<center>
+			<?php	endif;	?>
+			<table>
+			
+				<tbody>
+				
+					<tr>
+					
+						<td>Organization:</td>
+						
+						<td><?php	echo(htmlspecialchars($this->organization->name));	?></td>
+						
+					</tr>
+					
+					<tr>
+					
+						<td>Type:</td>
+						
+						<td><?php
+						
+							switch ($this->row['type']->GetValue()) {
+							
+								case 'membership renewal':
+								
+									?>Membership Renewal<?php
+									break;
+									
+								case 'membership new':
+								
+									?>New Membership<?php
+									break;
+									
+								case 'sponsor':
+								
+									?>Sponsor<?php
+									break;
+									
+								case 'conference':
+								
+									?>Conference<?php
+									break;
+									
+								case 'other':
+								default:
+								
+									?>Miscellaneous<?php
+									break;
+							
+							}
+						
+						?></td>
+					
+					</tr>
+					
+					<?php	if (isset($this->membership_type)):	?>
+					<tr>
+					
+						<td>Membership Type:</td>
+						
+						<td><?php	echo(htmlspecialchars($this->membership_type));	?></td>
+					
+					</tr>
+					<?php	endif;	?>
+					
+					<?php	if (isset($this->membership_year)):	?>
+					<tr>
+					
+						<td>Membership Year:</td>
+						
+						<td><?php	echo(htmlspecialchars($this->membership_year['name']->GetValue()));	?></td>
+					
+					</tr>
+					<?php	endif;	?>
+					
+					<?php	if (!is_null($this->row['invoice']->GetValue())):	?>
+					<tr>
+					
+						<td>Invoice/PO Number:</td>
+						
+						<td><?php	echo(htmlspecialchars($this->row['invoice']->GetValue()));	?></td>
+					
+					</tr>
+					<?php	endif;	?>
+					
+					<tr>
+					
+						<td>Subtotal:</td>
+						
+						<td>$<?php	echo(htmlspecialchars(sprintf('%.2f',$this->subtotal)));	?></td>
+						
+					</tr>
+					
+					<tr>
+					
+						<td><?php	echo(htmlspecialchars(intval(GST_RATE*100)));	?>% GST (#<?php	echo(htmlspecialchars(GST_NUMBER));	?>):</td>
+						
+						<td>$<?php	echo(htmlspecialchars(sprintf('%.2f',$this->tax)));	?></td>
+						
+					</tr>
+					
+					<tr>
+					
+						<td>Total:</td>
+						
+						<td>$<?php	echo(htmlspecialchars(sprintf('%.2f',$this->total)));	?></td>
+					
+					</tr>
+					
+					<?php	if (!is_null($this->row['datepaid']->GetValue())):	?>
+					<tr>
+					
+						<td>Paid:</td>
+						
+						<td><?php	echo(htmlspecialchars($this->row['datepaid']->GetValue()->format('d/m/Y g:i:s A')));	?></td>
+					
+					</tr>
+					<?php	endif;	?>
+					
+					<?php	if (!is_null($this->row['paymethod']->GetValue())):	?>
+					<tr>
+					
+						<td>Payment Method:</td>
+						
+						<td><?php	echo(htmlspecialchars($this->row['paymethod']->GetValue()));	?></td>
+					
+					</tr>
+					<?php	endif;	?>
+					
+					<?php	if (!is_null($this->row['chequeissuedby']->GetValue())):	?>
+					<tr>
+					
+						<td>Cheque Issued By:</td>
+						
+						<td><?php	echo(htmlspecialchars($this->row['chequeissuedby']->GetValue()));	?></td>
+					
+					</tr>
+					<?php	endif;	?>
+					
+					<?php	if (!is_null($this->row['chequenumber']->GetValue())):	?>
+					<tr>
+					
+						<td>Cheque Number:</td>
+						
+						<td><?php	echo(htmlspecialchars($this->row['chequenumber']->GetValue()));	?></td>
+					
+					</tr>
+					<?php	endif;	?>
+				
+				</tbody>
+				
+			</table>
+			<?php	if ($this->email):	?>
+			</center>
+			<?php	endif;	?>
+		
+		
+			<?php	if (!is_null($this->row['response']->GetValue())):	?>
+			<pre><?php	echo(htmlspecialchars($this->row['response']->GetValue()));	?></pre>
+			<?php	endif;	?>
+			
+			
+			<?php
+			
+				if (!is_null($this->row['notes']->GetValue())):
+				
+					$notes=preg_split(
+						'/$/m',
+						$this->row['notes']->GetValue()
+					);
+					
+					if (count($notes)!==0):
+					
+			?><h1>Notes</h1><?php	foreach ($notes as $x):	?><p><?php	echo(htmlspecialchars($x));	?></p><?php	endforeach;
+			
+					endif;
+					
+				endif;
+				
+			?>
+		
+		
+		</div>
+	
+	
+	</body>
+
+	
+</html>
