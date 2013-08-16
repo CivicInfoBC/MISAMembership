@@ -129,8 +129,8 @@ CREATE TABLE `payment` (
 	--	payment database.
 	`invoice` int(11) unsigned DEFAULT NULL,
 	`org_id` int(11) unsigned NOT NULL,
-	`membership_type_id` int(11) unsigned,
-	`membership_year_id` int(11) unsigned NOT NULL,
+	`membership_type_id` int(11) unsigned DEFAULT NULL,
+	`membership_year_id` int(11) unsigned DEFAULT NULL,
 	`type` enum(
 		'membership renewal',
 		'membership new',
@@ -145,6 +145,7 @@ CREATE TABLE `payment` (
 	`paid` bool NOT NULL DEFAULT '0',
 	`cardname` varchar(100) DEFAULT NULL,
 	`paymethod` varchar(50) DEFAULT NULL,
+	`response` text DEFAULT NULL,
 	`chequeissuedby` varchar(50) DEFAULT NULL,
 	`chequenumber` varchar(50) DEFAULT NULL,
 	`amountpaid` decimal(11,2) DEFAULT NULL,
