@@ -134,6 +134,7 @@ body {
 	padding-left: 15px;
 	font-size: 19pt;
 	color: #BFCBE6;
+	position: relative;
 
 }
 
@@ -202,6 +203,60 @@ body {
 #top_nav > a:nth-child(5) {
 
 	background: #17286A;
+
+}
+
+
+#keyword_search {
+
+	width: 280px;
+	position: absolute;
+	line-height: 100%;
+	top: 75px;
+	left: 642px;
+	height: 68px;
+	padding-top: 30px;
+	padding-left: 20px;
+	padding-right: 20px;
+	background: url(http://www.misa.civicinfo.bc.ca/images/diagonal-bg.png);
+
+}
+
+
+#keyword_search input[type="text"] {
+
+	width: 176px;
+	padding: 6px;
+	height: 18px;
+	border: 1px solid #CCCCCC;
+	background-color: white;
+	-moz-border-radius: 2px;
+	-ms-border-radius: 2px;
+	-o-border-radius: 2px;
+	-webkit-border-radius: 2px;
+	border-radius: 2px;
+	float: left;
+
+}
+
+
+#keyword_search input[type="submit"] {
+
+	border: 1px solid #1E728C;
+	background: #2BA6CB;
+	font-family: inherit;
+	font-size: 14px;
+	font-weight: bold;
+	padding-top: 10px;
+	padding-bottom: 11px;
+	padding-left: 20px;
+	padding-right: 20px;
+	color: white;
+	height: 32px;
+	width: 88px;
+	line-height: 1;
+	float: left;
+	margin-left: 2px;
 
 }
 

@@ -126,9 +126,24 @@
 			<div id="page_title">
 			
 				Municipal Information Systems Association of BC
+				
+				<?php	if (!is_null($user) && ($user->type==='admin')):	?>
+				
+				<div id="keyword_search">
+				
+					<form method="get" action="<?php	echo(htmlspecialchars($request->MakeLink('keyword')));	?>">
+					
+						<input type="text" name="keywords" />
+						
+						<input type="submit" name="search" value="Search" />
+					
+					</form>
+				
+				</div>
+				
+				<?php	endif;	?>
 			
 			</div>
-			
 			
 			<div id="top_nav">
 			
