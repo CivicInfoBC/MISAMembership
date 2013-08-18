@@ -155,29 +155,58 @@
 			
 		
 		</div>
+
+		<?php	if (isset($display_payment_prompt) && $display_payment_prompt):	?>
+		<div class="notification">You may pay membership dues, <a href="<?php
 		
-		<div id="main">
-		
-			<?php	if (isset($display_payment_prompt) && $display_payment_prompt):	?>
-			<div class="notification">You may pay membership dues, <a href="<?php
-			
-				echo(
-					htmlspecialchars(
-						$request->MakeLink(
-							'payment'
-						)
+			echo(
+				htmlspecialchars(
+					$request->MakeLink(
+						'payment'
 					)
-				);
+				)
+			);
+		
+		?>">click here</a> to do so</div>
+		<?php	endif;	?>
+
+		
+		<div id="main_container">
+		
+			<?php	if (!is_null($user)):	?>
+			<div id="sidebar">
 			
-			?>">click here</a> to do so</div>
+				<div>
+				
+					<h1>Navigation</h1>
+				
+					<a href="<?php	echo(htmlspecialchars($request->MakeLink()));	?>">My Profile</a>
+					
+					<?php	if (!is_null($user->organization)):	?>
+					<a href="<?php	echo(htmlspecialchars($request->MakeLink('organization',$user->organization->id)));	?>">My Organization</a>
+					<?php	endif;	?>
+					
+					<?php	if ($user->type==='admin'):	?>
+					<a href="<?php	echo(htmlspecialchars($request->MakeLink('users')));	?>">Users</a>
+					<a href="<?php	echo(htmlspecialchars($request->MakeLink('organizations')));	?>">Organizations</a>
+					<a href="<?php	echo(htmlspecialchars($request->MakeLink('administration')));	?>">Administration</a>
+					<?php	endif;	?>
+				
+				</div>
+			
+			</div>
 			<?php	endif;	?>
-		
-			<?php	if (!is_null($title)):	?>
-			<h1><?php	echo(htmlspecialchars($title));	?></h1>
-			<?php	endif;	?>
-		
-			<?php	$this->template->Render($this->file);	?>
-		
+			
+			<div id="main"<?php	if (!is_null($user)):	?> class="with_sidebar"<?php	endif;	?>>
+			
+				<?php	if (!is_null($title)):	?>
+				<h1><?php	echo(htmlspecialchars($title));	?></h1>
+				<?php	endif;	?>
+			
+				<?php	$this->template->Render($this->file);	?>
+			
+			</div>
+			
 		</div>
 		
 		<div id="footer">

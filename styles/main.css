@@ -40,11 +40,38 @@ body {
 /*	UNIFORM WIDTH	*/
 
 
-#banner, #page_title, #main, #footer > *, #top_nav {
+#banner, #page_title, #footer > *, #top_nav, #main_container, .notification {
 
 	width: 960px;
 	margin-left: auto;
 	margin-right: auto;
+
+}
+
+
+/*	WIDTH OF MAIN WITH SIDEBAR	*/
+
+
+#main_container {
+
+	overflow: hidden;
+
+}
+
+
+#main.with_sidebar {
+
+	float: left;
+	width: 780px;
+	margin-left: 20px;
+
+}
+
+
+#sidebar {
+
+	float: left;
+	width: 160px;
 
 }
 
@@ -261,10 +288,41 @@ body {
 }
 
 
+/*	SIDEBAR	*/
+
+
+#sidebar > div {
+
+	border-right: #73161E 4px solid;
+	padding-bottom: 20px;
+	padding-top: 7px;
+
+}
+
+
+#sidebar h1 {
+
+	font-size: 14pt;
+	color: #73161e;
+	font-weight: 400;
+	margin-bottom: 14px;
+
+}
+
+#sidebar a {
+
+	text-decoration: none;
+	color: inherit;
+	display: block;
+	margin-bottom: 5px;
+
+}
+
+
 /*	MAIN CONTENT	*/
 
 
-#main {
+#main, #sidebar, .notification {
 
 	margin-top: 35px;
 
@@ -274,6 +332,12 @@ body {
 #main > * {
 
 	margin-bottom: 20px;
+
+}
+
+#main a {
+
+	text-decoration: none;
 
 }
 
