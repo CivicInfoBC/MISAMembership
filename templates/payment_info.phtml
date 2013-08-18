@@ -1,4 +1,9 @@
-<h1>Payment Information</h1>
+<?php
+	
+	global $request;
+	global $user;
+	
+?><h1>Payment Information</h1>
 
 <?php	if (count($this->payment_info)===0):	?>
 
@@ -31,7 +36,39 @@
 		
 		<tr>
 		
-			<td><?php	echo(htmlspecialchars($x['created']->GetValue()->format($format)));	?></td>
+			<td><?php
+			
+				$link=false;
+				if (
+					(
+						($user->type==='superuser') ||
+						($user->type==='admin')
+					) &&
+					$x['paid']->GetValue()
+				):
+				
+					$link=true;
+			
+			?><a href="<?php
+			
+				echo(
+					htmlspecialchars(
+						$request->MakeLink(
+							'receipt',
+							$x['id']->GetValue()
+						)
+					)
+				);
+			
+			?>"><?php
+			
+				endif;
+				
+				echo(htmlspecialchars($x['created']->GetValue()->format($format)));
+				
+				if ($link):
+				
+			?></a><?php	endif;	?></td>
 			<td><?php
 				
 				echo(
