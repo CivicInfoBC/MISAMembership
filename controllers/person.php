@@ -7,7 +7,7 @@
 	//	Select the user to modify and
 	//	set the add flag if we're adding
 	//	a new user
-	if ($request->GetArg(0)==='add') {
+	if ($request->GetController()==='add') {
 	
 		//	ADDING
 	
@@ -156,17 +156,6 @@
 					'^[^@]+@[^@]+\\.[^@]+$',	//	E-mails can't be encapsulated by regexes, but here's some basic requirements
 					$curr_user->email
 				),
-				$add
-					?	new TextFormElement(
-							'username',
-							'Username',
-							'^.+$'	//	Non-optional
-						)
-					:	new TextElement(
-						'Username',
-						$curr_user->username
-					)
-				,
 				new ChangePasswordFormElement(
 					'password',
 					$add ? 'Password' : 'New Password',
@@ -356,72 +345,111 @@
 			
 			}
 			
-			//	Branch based on whether we're adding or not
-			if ($add) {
+			//	We're going to need to check to
+			//	make sure -- if an e-mail is being
+			//	changed -- that the e-mail is unique.
 			
-				//	Organization admins can only create
-				//	users in their own organization
-				if ($user->type==='superuser') $arr['org_id']=$user->org_id;
+			//	Get the database connection and lock
+			//	the user table
+			$conn=$dependencies['MISADBConn'];
+			if ($conn->query('LOCK TABLES `users` WRITE')===false) throw new Exception($conn->error);
 			
-				//	We need to make sure no one has
-				//	the username/e-mail that has been
-				//	specified
+			try {
+			
+				//	Branch based on whether we're adding or not
+				if ($add) {
 				
-				//	Get database connection
-				$conn=$dependencies['MISADBConn'];
-				
-				//	LOCK
-				if ($conn->query(
-					'LOCK TABLES
-						`users` WRITE,
-						`organizations` READ,
-						`payment` READ,
-						`membership_years` READ,
-						`membership_types` READ'
-				)===false) throw new Exception($conn->error);
-				
-				//	Check for username/e-mail uniqueness
-				if (
-					is_null(User::GetByUsername($arr['username'])) &&
-					is_null(User::GetByUsername($arr['email']))
-				) {
-				
-					$temp=new User($arr);
-					$insert_id=$temp->Save();
+					//	Organization admins can only create
+					//	users in their own organization
+					if ($user->type==='superuser') $arr['org_id']=$user->org_id;
+					
+					//	Check for duplicate e-mail
+					if (($query=$conn->query(
+						sprintf(
+							'SELECT
+								COUNT(*)
+							FROM
+								`users`
+							WHERE
+								`email`=\'%s\'',
+							$conn->real_escape_string($arr['email'])
+						)
+					))===false) throw new Exception($conn->error);
+					
+					$row=new MySQLRow($query);
+					
+					if ($row[0]->GetValue()!==0) {
+					
+						$temp=null;
+						$template->messages=array('E-mail already taken');
+					
+					} else {
+					
+						$temp=new User($arr);
+						$insert_id=$temp->Save();
+					
+					}
+					
+					//	Unlock tables
+					if ($conn->query('UNLOCK TABLES')===false) throw new Exception($conn->error);
+					
+					if (!is_null($temp)) {
+					
+						header(
+							'Location: '.$request->MakeLink(
+								null,
+								$insert_id
+							)
+						);
+						
+						exit();
+					
+					}
 				
 				} else {
 				
-					$template->messages=array('Username and/or E-Mail already taken');
+					//	Set the ID
+					$arr['id']=$curr_user->id;
 					
-					$temp=null;
-				
-				}
-				
-				//	UNLOCK
-				if ($conn->query('UNLOCK TABLES')===false) throw new Exception($conn->error);
-				
-				//	Redirect if insert successful
-				if (!is_null($temp)) {
-				
-					header(
-						'Location: '.$request->MakeLink(
-							null,
-							$insert_id
+					//	Check for duplicate e-mail
+					if (($query=$conn->query(
+						sprintf(
+							'SELECT
+								COUNT(*)
+							FROM
+								`users`
+							WHERE
+								`email`=\'%s\' AND
+								`id`<>\'%s\'',
+							$conn->real_escape_string($arr['email']),
+							$conn->real_escape_string($arr['id'])
 						)
-					);
+					))===false) throw new Exception($conn->error);
 					
-					exit();
+					$row=new MySQLRow($query);
+					
+					if ($row[0]->GetValue()!==0) {
+					
+						$template->messages=array('E-mail already taken');
+					
+					} else {
+					
+						$temp=new User($arr);
+						$temp->Save();
+					
+					}
+					
+					//	Unlock tables
+					if ($conn->query('UNLOCK TABLES')===false) throw new Exception($conn->error);
 				
 				}
+				
+			} catch (Exception $e) {
 			
-			} else {
+				//	Attempt to unlock
+				$conn->query('UNLOCK TABLES');
 			
-				//	Set the ID
-				$arr['id']=$curr_user->id;
-			
-				//	Update the database
-				$temp=new User($arr);
-				$temp->Save();
+				throw $e;
 			
 			}
 		
