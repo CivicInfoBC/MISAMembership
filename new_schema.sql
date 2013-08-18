@@ -167,10 +167,6 @@ CREATE TABLE `users` (
 	`last_name` varchar(255) NOT NULL,
 	`email` varchar(127) NOT NULL,
 	`title` varchar(255) DEFAULT NULL,
-	--	Can implement a login system that uses
-	--	`username` AND `email` as a username since
-	--	they're both necessarily unique.
-	`username` varchar(127) NOT NULL,
 	--	This field will store MD5 hashes, and
 	--	the next time a user logs in successfully
 	--	(and therefore the system has their password
@@ -210,7 +206,6 @@ CREATE TABLE `users` (
 	PRIMARY KEY (`id`),
 	FOREIGN KEY (`org_id`) REFERENCES `organizations`(`id`),
 	UNIQUE KEY (`email`),
-	UNIQUE KEY (`username`),
 	INDEX (`type`)
 );
 
