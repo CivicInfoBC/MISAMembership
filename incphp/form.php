@@ -683,6 +683,63 @@
 	
 	
 	/**
+	 *	A form element which is simply a heading.
+	 */
+	class HeadingElement implements FormElement {
+	
+		
+		/**
+		 *	The text which will make up
+		 *	the heading.
+		 */
+		public $text;
+		/**
+		 *	The number of the heading element
+		 *	to use.
+		 */
+		public $num;
+		
+		
+		/**
+		 *	Creates a new heading element.
+		 *
+		 *	\param [in] $text
+		 *		The text of the heading.
+		 *	\param [in] $num
+		 *		The number of the heading.  Defaults
+		 *		to 1.
+		 */
+		public function __construct ($text, $num=1) {
+		
+			$this->text=$text;
+			$this->num=$num;
+		
+		}
+		
+		
+		/**
+		 *
+		 */
+		public function Render () {
+		
+			$this->num=intval($this->num);
+		
+			if ($this->num<1) $this->num=1;
+			else if ($this->num>6) $this->num=6;
+		
+			return sprintf(
+				'<h%1$s>%2$s</h%1$s>',
+				htmlspecialchars($this->num),
+				htmlspecialchars($this->text)
+			);
+		
+		}
+		
+	
+	}
+	
+	
+	/**
 	 *	A form element which allows the user to
 	 *	select a province.
 	 */

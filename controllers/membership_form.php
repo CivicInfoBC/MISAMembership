@@ -105,14 +105,18 @@
 			null,
 			'Membership Type'
 		),
+		new HeadingElement(
+			'Primary Contact Information',
+			2
+		),
 		new TextFormElement(
 			'contact_first_name',
-			'Primary Contact First Name',
+			'First Name',
 			'^.+$'	//	Non-optional
 		),
 		new TextFormElement(
 			'contact_last_name',
-			'Primary Contact Last Name',
+			'Last Name',
 			'^.+$'	//	Non-optional
 		),
 		new TextFormElement(
@@ -122,56 +126,60 @@
 		),
 		new ChangePasswordFormElement(
 			'contact_password',
-			'Primary Contact Password',
+			'Password',
 			false
 		),
 		new TextFormElement(
 			'contact_email',
-			'Primary Contact E-Mail',
+			'E-Mail',
 			'^[^@]+@[^@]+\\.[^@]+$'	//	E-mails can't be encapsulated by regexes, but here's some basic requirements
 		),
 		new TextFormElement(
 			'contact_phone',
-			'Primary Contact Phone',
+			'Phone',
 			'^[\\d\\-\\s\\(\\)\\+]+$'	//	Non-optional
 		),
 		new TextFormElement(
 			'contact_fax',
-			'Primary Contact Fax',
+			'Fax',
 			'^[\\d\\-\\s\\(\\)\\+]*$'	//	Optional but with character restrictions
+		),
+		new HeadingElement(
+			'Secondary Contact Information (Optional)',
+			2
 		),
 		new TextFormElement(
 			'secondary_contact_first_name',
-			'Secondary Contact First Name',
+			'First Name',
 			''	//	Optional
 		),
 		new TextFormElement(
 			'secondary_contact_last_name',
-			'Secondary Contact Last Name',
+			'Last Name',
 			''	//	Optional
 		),
 		new TextFormElement(
 			'secondary_contact_title',
-			'Secondary Contact Title',
+			'Title',
 			''	//	Optional
 		),
 		new ChangePasswordFormElement(
 			'secondary_contact_password',
-			'Secondary Contact Password'
+			'Password'
 		),
 		new TextFormElement(
 			'secondary_contact_email',
-			'Secondary Contact E-Mail',
+			'E-Mail',
 			'^(?:[^@]+@[^@]+\\.[^@]+)?$'	//	E-mails can't be encapsulated by regexes, but here's some basic requirements
 		),
 		new TextFormElement(
 			'secondary_contact_phone',
-			'Secondary Contact Phone',
+			'Phone',
 			'^[\\d\\-\\s\\(\\)\\+]*$'	//	Non-optional
 		),
 		new TextFormElement(
 			'secondary_contact_fax',
-			'Secondary Contact Fax',
+			'Fax',
 			'^[\\d\\-\\s\\(\\)\\+]*$'	//	Optional but with character restrictions
 		),
 		new SubmitFormElement(
