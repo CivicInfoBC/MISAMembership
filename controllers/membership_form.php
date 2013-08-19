@@ -120,11 +120,6 @@
 			'Primary Contact Title',
 			''	//	Optional
 		),
-		new TextFormElement(
-			'contact_username',
-			'Primary Contact Username',
-			'^.+$'	//	Non-optional
-		),
 		new ChangePasswordFormElement(
 			'contact_password',
 			'Primary Contact Password',
@@ -158,11 +153,6 @@
 		new TextFormElement(
 			'secondary_contact_title',
 			'Secondary Contact Title',
-			''	//	Optional
-		),
-		new TextFormElement(
-			'secondary_contact_username',
-			'Secondary Contact Username',
 			''	//	Optional
 		),
 		new ChangePasswordFormElement(
@@ -217,13 +207,11 @@
 		}
 		
 		//	For secondary contact, if name,
-		//	username, e-mail, or password
-		//	has not been set, just axe the
-		//	whole thing
+		//	e-mail, or password has not been
+		//	set, just axe the whole thing
 		if (
 			is_null($arr['secondary_contact_first_name']) ||
 			is_null($arr['secondary_contact_last_name']) ||
-			is_null($arr['secondary_contact_username']) ||
 			is_null($arr['secondary_contact_password']) ||
 			is_null($arr['secondary_contact_email'])
 		) {
@@ -232,7 +220,6 @@
 			unset($arr['secondary_contact_last_name']);
 			unset($arr['secondary_contact_title']);
 			unset($arr['secondary_contact_password']);
-			unset($arr['secondary_contact_username']);
 			unset($arr['secondary_contact_email']);
 			unset($arr['secondary_contact_phone']);
 			unset($arr['secondary_contact_fax']);
@@ -241,9 +228,7 @@
 		
 		//	Prepare the organization for creation
 		$org=$arr;
-		unset($org['contact_username']);
 		unset($org['contact_password']);
-		unset($org['secondary_contact_username']);
 		unset($org['secondary_contact_password']);
 		$org['contact_name']=$org['contact_first_name'].' '.$org['contact_last_name'];
 		unset($org['contact_first_name']);
@@ -281,13 +266,15 @@
 		}
 		
 		$primary['password']=User::PasswordHash($primary['password']);
+		//	E-Mail addresses are always lowercase
+		$primary['email']=MBString::ToLower($primary['email']);
 		
 		$primary=new User($primary);
 		
 		//	Create a user for the secondary contact
 		//	if applicable
 		unset($secondary);
-		if (isset($arr['secondary_contact_name'])) {
+		if (isset($arr['secondary_contact_first_name'])) {
 		
 			$secondary=array();
 			foreach ($arr as $key=>$value) {
@@ -307,6 +294,8 @@
 			}
 			
 			$secondary['password']=User::PasswordHash($secondary['password']);
+			//	E-Mail addresses are always lowercase
+			$secondary['email']=MBString::ToLower($secondary['email']);
 			
 			$secondary=new User($secondary);
 		
@@ -314,82 +303,78 @@
 		
 		$template->messages=array();
 		
-		//	Check to make sure that usernames and
-		//	e-mail addresses are unique
+		//	Check to make sure that e-mail addresses
+		//	are not the same
 		if (
 			isset($secondary) &&
-			(
-				MBString::Compare(
-					$primary->username,
-					$secondary->username
-				) ||
-				MBString::Compare(
-					$primary->username,
-					$secondary->email
-				) ||
-				MBString::Compare(
-					$primary->email,
-					$secondary->username
-				) ||
-				MBString::Compare(
-					$primary->email,
-					$secondary->email
-				)
+			MBString::Compare(
+				$primary->email,
+				$secondary->email
 			)
-		) $template->messages[]='Primary and Secondary Contact Usernames and/or E-Mails must not be identical';
+		) $template->messages[]='Primary and Secondary Contact E-Mails must not be identical';
 		
 		//	Lock table so that users with
-		//	the same username/e-mail cannot
-		//	be simultaneously inserted
+		//	the same e-mail cannot be
+		//	simultaneously inserted
 		$conn=$dependencies['MISADBConn'];
 		if ($conn->query(
-			'LOCK TABLES
-				`users` WRITE,
-				`organizations` WRITE,
-				`payment` READ,
-				`membership_years` READ,
-				`membership_types` READ'
+			'LOCK TABLES `users` WRITE, `organizations` WRITE'
 		)===false) throw new Exception($conn->error);
 		
-		if (!(
-			is_null(User::GetByUsername($primary->username)) &&
-			is_null(User::GetByUsername($primary->email))
-		)) {
+		try {
 		
-			$template->messages[]='Primary Contact Username is already taken';
-			$template->messages[]='Primary Contact E-Mail is already taken';
-		
-		}
-		
-		if (
-			isset($secondary) &&
-			!(
-				is_null(User::GetByUsername($secondary->username)) &&
-				is_null(User::GetByUsername($secondary->email))
-			)
-		) {
+			//	Check for e-mail collisions
 			
-			$template->messages[]='Secondary Contact Username is already taken';
-			$template->messages[]='Secondary Contact E-Mail is already taken';
-		
-		}
-		
-		//	INSERT if no errors
-		if (count($template->messages)===0) {
-		
-			$org->id=$org->Save();
+			$check_email=function ($email) use ($conn) {
+				
+				if (($query=$conn->query(
+					sprintf(
+						'SELECT
+							COUNT(*)
+						FROM
+							`users`
+						WHERE
+							`email`=\'%s\'',
+						$conn->real_escape_string($email)
+					)
+				))===false) throw new Exception($conn->error);
+				
+				$row=new MySQLRow($query);
+				
+				return $row[0]->GetValue()===0;
 			
-			$primary->org_id=$org->id;
-			$primary->type='superuser';
-			$primary->Save();
+			};
 			
-			if (isset($secondary)) {
+			if (!$check_email($primary->email)) $template->messages[]='Primary Contact E-Mail is already taken';
+			if (
+				isset($secondary) &&
+				!$check_email($secondary->email)
+			) $template->messages[]='Secondary Contact E-Mail is already taken';
 			
-				$secondary->org_id=$org->id;
-				$secondary->type='superuser';
-				$secondary->Save();
+			//	INSERT if no errors
+			if (count($template->messages)===0) {
+			
+				$org->id=$org->Save();
+				
+				$primary->org_id=$org->id;
+				$primary->type='superuser';
+				$primary->Save();
+				
+				if (isset($secondary)) {
+				
+					$secondary->org_id=$org->id;
+					$secondary->type='superuser';
+					$secondary->Save();
+				
+				}
 			
 			}
+			
+		} catch (Exception $e) {
+		
+			$conn->query('UNLOCK TABLES');
+			
+			throw $e;
 		
 		}
 		
