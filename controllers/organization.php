@@ -320,6 +320,10 @@
 			
 			}
 			
+			//	E-Mail addresses are always lowercase
+			$arr['contact_email']=MBString::ToLower($arr['contact_email']);
+			if (!is_null($arr['secondary_contact_email'])) $arr['secondary_contact_email']=MBString::ToLower($arr['secondary_contact_email']);
+			
 			//	If mandatory information about
 			//	the secondary contact is missing,
 			//	ignore it
