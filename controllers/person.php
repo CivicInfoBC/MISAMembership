@@ -321,6 +321,9 @@
 			
 			}
 			
+			//	E-Mail addresses are always lowercase
+			$arr['email']=MBString::ToLower($arr['email']);
+			
 			//	Process the Country/Province/State
 			//	drop-down's values
 			$obj=ProvinceFormElement::Split($arr['territorial_unit']);
@@ -381,7 +384,7 @@
 					if ($row[0]->GetValue()!==0) {
 					
 						$temp=null;
-						$template->messages=array('E-mail already taken');
+						$template->messages=array('E-Mail already taken');
 					
 					} else {
 					
