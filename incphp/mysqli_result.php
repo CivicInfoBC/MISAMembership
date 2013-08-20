@@ -2,6 +2,7 @@
 
 
 	require_once(WHERE_PHP_INCLUDES.'mb.php');
+	require_once(WHERE_PHP_INCLUDES.'key_value.php');
 
 
 	/**
@@ -317,6 +318,44 @@
 		 *		Ignored.
 		 */
 		public function offsetUnset ($offset) {	}
+		
+		
+		/**
+		 *	Converts this row into an object.
+		 *
+		 *	\return
+		 *		An object representing this row.
+		 */
+		public function ToObject () {
+		
+			$retr=new KeyValueStore();
+			
+			foreach ($this as $key=>$value) $retr->$key=$value->GetValue();
+			
+			return $retr;
+		
+		}
+		
+		
+		/**
+		 *	Retrieves the next row in a result
+		 *	set as an object.
+		 *
+		 *	\param [in] $query
+		 *		The result set from which to
+		 *		fetch.
+		 *
+		 *	\return
+		 *		The next row from \em query as an
+		 *		object.
+		 */
+		public static function FetchObject ($query) {
+		
+			$row=new MySQLRow($query);
+			
+			return $row->ToObject();
+		
+		}
 	
 	
 	}

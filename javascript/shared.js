@@ -37,6 +37,13 @@ if (typeof RegExp.escape!='function') RegExp.escape=function (str) {
 }
 
 
+if (!String.prototype.trim) String.prototype.trim=function () {
+
+	return this.replace(/^\s+|\s+$/g,'');
+
+};
+
+
 /**
  *	Adds a CSS class to a given object.
  *
@@ -109,5 +116,12 @@ function unerror_element (obj) {
 	RemoveClass(obj,'error');
 	
 	for (obj=obj.firstChild;obj!==null;obj=obj.nextSibling) unerror_element(obj);
+
+}
+
+
+function IsNumeric (n) {
+
+	return !isNaN(parseFloat(n)) && isFinite(n);
 
 }

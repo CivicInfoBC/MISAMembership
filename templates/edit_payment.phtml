@@ -1,0 +1,571 @@
+<?php
+
+
+	global $request;
+	
+	
+	function render_options ($options, $selected=null) {
+	
+		?><option></option><?php
+	
+		foreach ($options as $value=>$label) {
+		
+			?><option value="<?php
+				echo(htmlspecialchars($value));
+			?>"<?php
+				if ($value===$selected):
+			?> selected<?php
+				endif;
+			?>><?php
+				echo(htmlspecialchars($label));
+			?></option><?php
+		
+		}
+	
+	}
+	
+	
+?>
+
+
+<?php	if (isset($this->messages) && (count($this->messages)!==0)):	?>
+<div class="messages">
+
+	<?php	foreach ($this->messages as $message):	?>
+	<div><?php	echo(htmlspecialchars($message));	?></div>
+	<?php	endforeach;	?>
+
+</div>
+<?php	endif;	?>
+
+
+<?php	if (!$this->add && $this->form->paid):	?>
+<div class="top_link"><a href="<?php
+	echo(htmlspecialchars($request->MakeLink('receipt',$this->form->id)));
+?>">View Receipt</a></div>
+<?php	endif;	?>
+
+
+<form id="form" method="POST">
+
+
+	<div>
+	
+		<div>Organization:</div>
+	
+		<div>
+		
+			<?php	if ($this->add):	?>
+			<select name="org_id">
+				<?php	render_options($this->organizations,$this->form->org_id);	?>
+			</select>
+			<?php	else:	?>
+			<?php	echo(htmlspecialchars($this->organization->name));	?>
+			<?php	endif;	?>
+			
+		</div>
+	
+	</div>
+	
+	
+	<div>
+	
+		<div>Payment Type:</div>
+		
+		<div>
+		
+			<?php	if ($this->add):	?>
+			<select name="type">
+				<?php	render_options($this->types,$this->form->type);	?>
+			</select>
+			<?php	else:	?>
+			<?php	echo(htmlspecialchars($this->types[$this->form->type]));	?>
+			<?php	endif;	?>
+		
+		</div>
+		
+	</div>
+	
+	
+	<?php
+	
+		
+	
+		if ($this->add):
+		
+			$dues=($this->form->type==='membership renewal') || ($this->form->type==='membership new');
+			
+	?>
+	
+	
+	<div<?php	if (!$dues):	?> style="display:none;"<?php	endif;	?>>
+	
+		<div>Membership Type:</div>
+		
+		<div><select name="membership_type_id"><?php	render_options($this->membership_types,$this->form->membership_type_id);	?></select></div>
+	
+	</div>
+	
+	
+	<div<?php	if (!$dues):	?> style="display:none;"<?php	endif;	?>>
+	
+		<div>Membership Year:</div>
+		
+		<div><select name="membership_year_id"><?php	render_options($this->membership_years,$this->form->membership_year_id);	?></select></div>
+	
+	</div>
+	
+	
+	<?php	elseif (($this->form->type==='membership renewal') || ($this->form->type==='membership new')):	?>
+	
+	
+	<div>
+	
+		<div>Membership Type:</div>
+		
+		<div><?php	echo(htmlspecialchars($this->membership_type));	?></div>
+	
+	</div>
+	
+	
+	<div>
+	
+		<div>Membership Year:</div>
+		
+		<div><?php	echo(htmlspecialchars($this->membership_year->name));	?></div>
+	
+	</div>
+	
+	
+	<?php	endif;	?>
+	
+	
+	<?php	if (!$this->add):	?>
+	<div>
+	
+		<div>Created:</div>
+		
+		<div><?php	echo(htmlspecialchars($this->form->created->format('F jS, Y g:i:s A')));	?></div>
+	
+	</div>
+	<?php	endif;	?>
+	
+	
+	<div>
+	
+		<div>Total:</div>
+		
+		<div>$ <input type="text" name="total" value="<?php	echo(htmlspecialchars(sprintf('%.2f',$this->form->total)));	?>" /></div>
+	
+	</div>
+	
+	
+	<div>
+	
+		<div>Paid?</div>
+		
+		<div><input type="checkbox" name="paid" value="<?php	echo(htmlspecialchars(TRUE_STRING));	?>"<?php	if ($this->form->paid):	?> checked<?php	endif;	?> /></div>
+	
+	</div>
+	
+	
+	<div<?php	if (!$this->form->paid):	?> style="display:none;"<?php	endif;	?>>
+	
+		<div>Payment Method:</div>
+		
+		<div>
+		
+			<?php	foreach ($this->paymethods as $value=>$label):	?>
+			<div><input type="radio" name="paymethod" value="<?php
+				echo(htmlspecialchars($value));
+			?>"<?php
+				if ($this->form->paymethod===$value):
+			?> checked<?php
+				endif;
+			?> /> <?php
+				echo(htmlspecialchars($label));
+			?></div>
+			<?php	endforeach;	?>
+			
+		</div>
+		
+	</div>
+	
+	
+	<?php
+	
+		$cheque=$this->form->paymethod==='Cheque';
+		$cc=!($cheque || ($this->form->paymethod==='Other') || is_null($this->form->paymethod));
+		
+	?>
+	
+	
+	<div<?php	if (!$cc):	?> style="display:none;"<?php	endif;	?>>
+	
+		<div>Name on Credit Card:</div>
+		
+		<div><input type="text" name="cardname" value="<?php	echo(htmlspecialchars($this->form->cardname));	?>" /></div>
+	
+	</div>
+	
+	
+	<div<?php	if (!$cc):	?> style="display:none;"<?php	endif;	?>>
+	
+		<div>Credit Card Receipt:</div>
+		
+		<div><textarea name="response"><?php	echo(htmlspecialchars($this->form->response));	?></textarea></div>
+	
+	</div>
+	
+	
+	<div<?php	if (!$cheque):	?> style="display:none;"<?php	endif;	?>>
+
+		<div>Cheque Number:</div>
+		
+		<div><input type="text" name="chequenumber" value="<?php	echo(htmlspecialchars($this->form->chequenumber));	?>" /></div>
+	
+	</div>
+	
+	
+	<div<?php	if (!$cheque):	?> style="display:none;"<?php	endif;	?>>
+	
+		<div>Cheque Issued By:</div>
+		
+		<div><input type="text" name="chequeissuedby" value="<?php	echo(htmlspecialchars($this->form->chequeissuedby));	?>" /></div>
+	
+	</div>
+	
+	
+	<div<?php	if (!$this->form->paid):	?> style="display:none;"<?php	endif;	?>>
+	
+		<div>Amount Paid:</div>
+		
+		<div>$ <input type="text" name="amountpaid" value="<?php
+			if (is_null($this->form->amountpaid)):	?>0.00<?php	else:echo(htmlspecialchars(sprintf('%.2f',$this->form->amountpaid)));endif;
+		?>" /></div>
+	
+	</div>
+	
+	
+	<div>
+	
+		<div>Notes:</div>
+		
+		<div><textarea name="notes"><?php	echo(htmlspecialchars($this->form->notes));	?></textarea></div>
+	
+	</div>
+	
+	
+	<input type="submit" value="Submit" name="Submit" />
+
+
+</form>
+
+
+<script type="text/javascript">
+
+
+	var form=document.getElementById('form');
+	
+	
+	var type_select=form.elements['type'];
+	var membership_type_id=form.elements['membership_type_id'];
+	var membership_year_id=form.elements['membership_year_id'];
+	
+	
+	if (type_select) AddCallbackToEvent(
+		type_select,
+		'onchange',
+		function () {
+		
+			var type=type_select.options[type_select.selectedIndex].value;
+			
+			var display=((type==='membership new') || (type==='membership renewal')) ? 'inherit' : 'none';
+			
+			membership_type_id.parentElement.parentElement.style.display=display;
+			membership_year_id.parentElement.parentElement.style.display=display;
+		
+		}
+	);
+	
+	
+	var paid=form.elements['paid'];
+	var paymethod=form.elements['paymethod'];
+	var response=form.elements['response'];
+	var cardname=form.elements['cardname'];
+	var chequeissuedby=form.elements['chequeissuedby'];
+	var chequenumber=form.elements['chequenumber'];
+	var amountpaid=form.elements['amountpaid'];
+	
+	
+	function verify_form () {
+	
+		var verified=true;
+		
+		var org_id=form.elements['org_id'];
+		if (
+			org_id &&
+			(org_id.options[org_id.selectedIndex].value==='')
+		) {
+		
+			ErrorElement(org_id);
+			verified=false;
+		
+		} else {
+		
+			UnerrorElement(org_id);
+		
+		}
+		
+		if (type_select) {
+		
+			var type_select_val=type_select.options[type_select.selectedIndex].value;
+			
+			if (type_select_val==='') {
+			
+				ErrorElement(type_select);
+				verified=false;
+			
+			} else {
+			
+				UnerrorElement(type_select);
+				
+				if (
+					(type_select_val==='membership new') ||
+					(type_select_val==='membership renewal')
+				) {
+				
+					if (membership_year_id.options[membership_year_id.selectedIndex].value==='') {
+					
+						ErrorElement(membership_year_id);
+						verified=false;
+					
+					} else {
+					
+						UnerrorElement(membership_year_id);
+					
+					}
+					
+					if (membership_type_id.options[membership_type_id.selectedIndex].value==='') {
+					
+						ErrorElement(membership_type_id);
+						verified=false;
+					
+					} else {
+					
+						UnerrorElement(membership_type_id);
+					
+					}
+				
+				}
+			
+			}
+		
+		}
+		
+		var total=form.elements['total'];
+		if (IsNumeric(total.value.trim())) {
+		
+			UnerrorElement(total);
+		
+		} else {
+		
+			ErrorElement(total);
+			verified=false;
+		
+		}
+		
+		if (paid.checked) {
+		
+			var paymethod_val=null;
+			for (var i=0;i<paymethod.length;++i) {
+			
+				if (paymethod[i].checked) {
+				
+					paymethod_val=paymethod[i].value;
+					
+					break;
+				
+				}
+			
+			}
+			
+			if (paymethod_val===null) {
+			
+				ErrorElement(paymethod[0]);
+				verified=false;
+			
+			} else {
+			
+				UnerrorElement(paymethod[0]);
+				
+				if (paymethod_val==='Cheque') {
+				
+					if (chequenumber.value.trim()==='') {
+					
+						ErrorElement(chequenumber);
+						verified=false;
+					
+					} else {
+					
+						UnerrorElement(chequenumber);
+					
+					}
+					
+					if (chequeissuedby.value.trim()==='') {
+					
+						ErrorElement(chequeissuedby);
+						verified=false;
+					
+					} else {
+					
+						UnerrorElement(chequeissuedby);
+					
+					}
+				
+				} else if (paymethod_val!=='Other') {
+				
+					if (cardname.value.trim()==='') {
+					
+						ErrorElement(cardname);
+						verified=false;
+					
+					} else {
+					
+						UnerrorElement(cardname);
+					
+					}
+				
+				}
+				
+				if (IsNumeric(amountpaid.value.trim())) {
+				
+					UnerrorElement(amountpaid);
+				
+				} else {
+				
+					ErrorElement(amountpaid);
+					verified=false;
+				
+				}
+			
+			}
+		
+		}
+		
+		return verified;
+	
+	}
+	
+	
+	AddCallbackToEvent(
+		form,
+		'onsubmit',
+		verify_form
+	);
+	
+	
+	function show_cheque () {
+	
+		chequeissuedby.parentElement.parentElement.style.display='inherit';
+		chequenumber.parentElement.parentElement.style.display='inherit';
+	
+	}
+	
+	
+	function hide_cheque () {
+	
+		chequeissuedby.parentElement.parentElement.style.display='none';
+		chequenumber.parentElement.parentElement.style.display='none';
+	
+	}
+	
+	
+	function show_cc () {
+	
+		response.parentElement.parentElement.style.display='inherit';
+		cardname.parentElement.parentElement.style.display='inherit';
+	
+	}
+	
+	
+	function hide_cc () {
+	
+		response.parentElement.parentElement.style.display='none';
+		cardname.parentElement.parentElement.style.display='none';
+	
+	}
+	
+	
+	function show_hide_paymethod () {
+	
+		if (paid.checked) {
+		
+			var paymethod_val=null;
+			for (var i=0;i<paymethod.length;++i) {
+			
+				if (paymethod[i].checked) {
+				
+					paymethod_val=paymethod[i].value;
+				
+					break;
+				
+				}
+			
+			}
+			
+			if (paymethod_val==='Cheque') {
+			
+				show_cheque();
+				hide_cc();
+			
+			} else if (
+				(paymethod_val==='MASTERCARD') ||
+				(paymethod_val==='VISA') ||
+				(paymethod_val==='AMERICAN EXPRESS')
+			) {
+			
+				show_cc();
+				hide_cheque();
+			
+			} else {
+			
+				hide_cc();
+				hide_cheque();
+			
+			}
+		
+		} else {
+		
+			hide_cc();
+			hide_cheque();
+		
+		}
+	
+	}
+	
+	
+	AddCallbackToEvent(
+		paid,
+		'onclick',
+		function () {
+		
+			var display=paid.checked ? 'inherit' : 'none';
+		
+			paymethod[0].parentElement.parentElement.parentElement.style.display=display;
+			amountpaid.parentElement.parentElement.style.display=display;
+			
+			show_hide_paymethod();
+		
+		}
+	);
+	
+	
+	for (var i=0;i<paymethod.length;++i) AddCallbackToEvent(
+		paymethod[i],
+		'onclick',
+		show_hide_paymethod
+	);
+
+	
+</script>

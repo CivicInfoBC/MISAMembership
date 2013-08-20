@@ -81,6 +81,33 @@
 		);
 	
 	}
+	
+	
+	function fetch_post ($key) {
+	
+		if (!isset($_POST[$key])) return null;
+		
+		$temp=MBString::Trim($_POST[$key]);
+		
+		if ($temp==='') return null;
+		
+		return $temp;
+	
+	}
+	
+	
+	function fetch_post_int ($key) {
+	
+		$temp=fetch_post($key);
+		
+		if (!(
+			is_numeric($temp) &&
+			(($temp_int=intval($temp))==floatval($temp))
+		)) return null;
+		
+		return $temp_int;
+	
+	}
 
 
 	//	Load configuration
