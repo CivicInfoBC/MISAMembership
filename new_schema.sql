@@ -45,6 +45,8 @@ CREATE TABLE `membership_types` (
 	`description` text,
 	`price` decimal(11,2) NOT NULL DEFAULT '0.00',
 	`is_municipality` bool NOT NULL DEFAULT '0',
+	`show` bool NOT NULL,
+	`order` int(11) unsigned NOT NULL
 	PRIMARY KEY (`id`)
 );
 
