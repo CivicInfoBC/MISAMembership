@@ -81,7 +81,7 @@
 		
 		
 		/**
-		 *	When implemented in a deriver class
+		 *	When implemented in a derived class
 		 *	returns the JavaScript necessary to
 		 *	run verification of this element on
 		 *	the client side.
