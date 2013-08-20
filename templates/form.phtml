@@ -13,6 +13,19 @@
 </script>
 
 
+<?php	if (isset($this->intro) && (count($this->intro)!==0)):	?>
+
+<div class="intro">
+
+	<?php	foreach ($this->intro as $x):	?>
+	<p><?php	echo(htmlspecialchars($x));	?></p>
+	<?php	endforeach;	?>
+
+</div>
+
+<?php	endif;	?>
+
+
 <?php	if (isset($this->messages) && (count($this->messages)!==0)):	?>
 
 <div class="messages">

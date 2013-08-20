@@ -538,6 +538,13 @@ form > p {
 }
 
 
+form > div > div > p {
+
+	margin-top: 10px;
+
+}
+
+
 textarea {
 
 	width: 100%;
@@ -667,6 +674,20 @@ table a {
 
 	text-align: center;
 	color: red;
+
+}
+
+
+.intro p {
+
+	margin-bottom: 10px;
+
+}
+
+
+.info {
+
+	font-style: italic;
 
 }
 

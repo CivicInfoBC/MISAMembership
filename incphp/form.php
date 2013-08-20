@@ -1707,6 +1707,55 @@
 	
 	
 	}
+	
+	
+	class CustomFormElement extends DataFormElement {
+	
+	
+		public $render;
+		public $validate_render;
+		public $validator;
+	
+	
+		public function __construct ($key, $value, $render, $validate_render, $validator) {
+		
+			parent::__construct($key,$value);
+		
+			$this->render=$render;
+			$this->validate_render=$validate_render;
+			$this->validator=$validator;
+		
+		}
+		
+		
+		public function RenderVerify () {
+		
+			$c=$this->validate_render;
+			
+			return $c($this);
+		
+		}
+		
+		
+		public function Verify () {
+		
+			$c=$this->validator;
+			
+			return $c($this);
+		
+		}
+		
+		
+		public function Render () {
+		
+			$c=$this->render;
+			
+			return $c($this);
+		
+		}
+	
+	
+	}
 
 
 ?>

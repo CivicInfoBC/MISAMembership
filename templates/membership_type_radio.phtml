@@ -1,0 +1,28 @@
+<?php	foreach ($this->types as $type):	?>
+
+<div>
+
+	<div><input type="radio" name="membership_type_id" value="<?php	echo(htmlspecialchars($type->id));	?>" /></div>
+	
+	<div><?php
+		
+		echo(htmlspecialchars($type->name));
+		
+	?> ($<?php	echo(htmlspecialchars(sprintf('%.2f',$type->price)));	?>)<?php
+	
+		$desc=preg_split(
+			'/$/mu',
+			$type->description
+		);
+		
+		foreach ($desc as $x):
+		
+	?><p class="info"><?php	echo(htmlspecialchars($x));	?></p><?php
+	
+		endforeach;
+		
+	?></div>
+
+</div>
+
+<?php	endforeach;	?>

@@ -24,15 +24,35 @@
 	require_once(WHERE_PHP_INCLUDES.'form.php');
 	
 	
+	$mt=new Template(WHERE_TEMPLATES);
+	
+	
 	//	Users will be able to select one
 	//	of the membership types, so
 	//	fetch, sort, and arrange them
 	//	into a convenient collection
-	$types=Organization::GetTypes();
+	$mt->types=Organization::GetTypes();
+	
+	for ($i=0;$i<count($mt->types);) {
+	
+		if (!$mt->types[$i]->show) {
+		
+			unset($mt->types[$i]);
+			
+			continue;
+		
+		}
+		
+		++$i;
+	
+	}
 	
 	usort(
-		$types,
+		$mt->types,
 		function ($first, $second) {
+		
+			if ($first->order<$second->order) return -1;
+			if ($first->order>$second->order) return 1;
 		
 			return Collator::Create(Collator::DEFAULT_VALUE)->compare(
 				$first->name,
@@ -42,20 +62,38 @@
 		}
 	);
 	
-	$mt=array();
-	
-	foreach ($types as $x) {
-	
-		$mt[$x->id]=$x->name.': $'.sprintf('%.2f',$x->price);
-	
-	}
-	
 	
 	//	Prepare the form
 	$elements=array(
+		new HeadingElement(
+			'Membership Type',
+			2
+		),
+		new CustomFormElement(
+			'membership_type_id',
+			null,
+			function ($e) use ($mt) {	return $mt->Get('membership_type_radio.phtml');	},
+			function ($e) use ($mt) {	return $mt->Get('membership_type_radio_validate.js');	},
+			function ($e) use ($mt) {
+			
+				if (!(
+					is_numeric($e->value) &&
+					(($id=intval($e->value))==floatval($e->value))
+				)) return false;
+			
+				foreach ($mt->types as $type) if ($id===$type->id) return true;
+				
+				return false;
+			
+			}
+		),
+		new HeadingElement(
+			'Organization Information',
+			2
+		),
 		new TextFormElement(
 			'name',
-			'Organization Name',
+			'Name',
 			'^.+$'	//	Non-optional
 		),
 		new TextFormElement(
@@ -98,12 +136,6 @@
 			'fax',
 			'Fax',
 			'^[\\d\\-\\s\\(\\)\\+]*$'
-		),
-		new RadioButtonFormElement(
-			'membership_type_id',
-			$mt,
-			null,
-			'Membership Type'
 		),
 		new HeadingElement(
 			'Primary Contact Information',
@@ -431,6 +463,13 @@
 		display_form:
 	
 		$template->form=$form;
+		$template->intro=array(
+			'Thank-you for applying for MISA BC membership!',
+			'Please fill out and submit the form below.  '.
+			'Once our membership administrator has confirmed your application details, '.
+			'you will receive information on how to pay your first year\'s membership dues.',
+			'We look forward to having you join our community!'
+		);
 		Render($template,'form.phtml');
 		
 	}
