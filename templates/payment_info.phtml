@@ -38,25 +38,30 @@
 		
 			<td><?php
 			
-				$link=false;
-				if (
-					(
-						($user->type==='superuser') ||
-						($user->type==='admin')
-					) &&
-					$x['paid']->GetValue()
-				):
+				$admin_link=false;
+				$superuser_link=false;
 				
-					$link=true;
+				if ($user->type==='admin') $admin_link=true;
+				else if (
+					($user->type==='superuser') &&
+					$x['paid']->GetValue()
+				) $superuser_link=true;
+				
+				if ($admin_link || $superuser_link):
 			
 			?><a href="<?php
 			
 				echo(
 					htmlspecialchars(
-						$request->MakeLink(
-							'receipt',
-							$x['id']->GetValue()
-						)
+						$admin_link
+							?	$request->MakeLink(
+									'edit_payment',
+									$x['id']->GetValue()
+								)
+							:	$request->MakeLink(
+									'recipt',
+									$x['id']->GetValue()
+								)
 					)
 				);
 			
@@ -66,7 +71,7 @@
 				
 				echo(htmlspecialchars($x['created']->GetValue()->format($format)));
 				
-				if ($link):
+				if ($superuser_link || $admin_link):
 				
 			?></a><?php	endif;	?></td>
 			<td><?php
