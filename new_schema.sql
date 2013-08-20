@@ -139,8 +139,8 @@ CREATE TABLE `payment` (
 		'other'
 	) NOT NULL,
 	`created` datetime NOT NULL,
-	`subtotal` decimal(11,2) NOT NULL,
-	`tax` decimal(11,2) NOT NULL,
+	`subtotal` decimal(11,2) DEFAULT NULL,
+	`tax` decimal(11,2) DEFAULT NULL,
 	`total` decimal(11,2) NOT NULL,
 	`paid` bool NOT NULL DEFAULT '0',
 	`cardname` varchar(100) DEFAULT NULL,
