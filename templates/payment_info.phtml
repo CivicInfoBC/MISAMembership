@@ -5,6 +5,12 @@
 	
 ?><h1>Payment Information</h1>
 
+<?php	if ($user->type==='admin'):	?>
+
+<div class="top_link"><a href="<?php	echo(htmlspecialchars($request->MakeLink('add_payment')));	?>">Add Payment</a></div>
+
+<?php	endif;	?>
+
 <?php	if (count($this->payment_info)===0):	?>
 
 <div class="no_results">No payments</div>
