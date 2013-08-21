@@ -179,67 +179,6 @@
 							'Type',
 							Organization::GetType($org->membership_type_id)
 						)
-				,
-				new TextFormElement(
-					'contact_name',
-					'Primary Contact Name',
-					'^.+$',	//	Non-optional
-					$org->contact_name
-				),
-				new TextFormElement(
-					'contact_title',
-					'Primary Contact Title',
-					'',	//	Optional
-					$org->contact_title
-				),
-				new TextFormElement(
-					'contact_email',
-					'Primary Contact E-Mail',
-					'^[^@]+@[^@]+\\.[^@]+$',	//	E-mails can't be encapsulated by regexes, but here's some basic requirements
-					$org->contact_email
-				),
-				new TextFormElement(
-					'contact_phone',
-					'Primary Contact Phone',
-					'^[\\d\\-\\s\\(\\)\\+]+$',	//	Non-optional
-					$org->contact_phone
-				),
-				new TextFormElement(
-					'contact_fax',
-					'Primary Contact Fax',
-					'^[\\d\\-\\s\\(\\)\\+]*$',	//	Optional but with character restrictions
-					$org->contact_fax
-				),
-				new TextFormElement(
-					'secondary_contact_name',
-					'Secondary Contact Name',
-					'',	//	Optional
-					$org->secondary_contact_name
-				),
-				new TextFormElement(
-					'secondary_contact_title',
-					'Secondary Contact Title',
-					'',	//	Optional
-					$org->secondary_contact_title
-				),
-				new TextFormElement(
-					'secondary_contact_email',
-					'Secondary Contact E-Mail',
-					'^(?:[^@]+@[^@]+\\.[^@]+)?$',	//	E-mails can't be encapsulated by regexes, but here's some basic requirements
-					$org->secondary_contact_email
-				),
-				new TextFormElement(
-					'secondary_contact_phone',
-					'Secondary Contact Phone',
-					'^[\\d\\-\\s\\(\\)\\+]*$',	//	Optional
-					$org->secondary_contact_phone
-				),
-				new TextFormElement(
-					'secondary_contact_fax',
-					'Secondary Contact Fax',
-					'^[\\d\\-\\s\\(\\)\\+]*$',	//	Optional but with character restrictions
-					$org->secondary_contact_fax
-				)
 			)
 		);
 		
@@ -277,6 +216,82 @@
 						$org->perpetual ? 'Yes' : 'No'
 					)
 		);
+		
+		
+		$elements=array_merge(
+			$elements,
+			array(
+				new HeadingElement(
+					'Primary Contact Information',
+					2
+				),
+				new TextFormElement(
+					'contact_name',
+					'Name',
+					'^.+$',	//	Non-optional
+					$org->contact_name
+				),
+				new TextFormElement(
+					'contact_title',
+					'Title',
+					'',	//	Optional
+					$org->contact_title
+				),
+				new TextFormElement(
+					'contact_email',
+					'E-Mail',
+					'^[^@]+@[^@]+\\.[^@]+$',	//	E-mails can't be encapsulated by regexes, but here's some basic requirements
+					$org->contact_email
+				),
+				new TextFormElement(
+					'contact_phone',
+					'Phone',
+					'^[\\d\\-\\s\\(\\)\\+]+$',	//	Non-optional
+					$org->contact_phone
+				),
+				new TextFormElement(
+					'contact_fax',
+					'Fax',
+					'^[\\d\\-\\s\\(\\)\\+]*$',	//	Optional but with character restrictions
+					$org->contact_fax
+				),
+				new HeadingElement(
+					'Secondary Contact Information (Optional)',
+					2
+				),
+				new TextFormElement(
+					'secondary_contact_name',
+					'Name',
+					'',	//	Optional
+					$org->secondary_contact_name
+				),
+				new TextFormElement(
+					'secondary_contact_title',
+					'Title',
+					'',	//	Optional
+					$org->secondary_contact_title
+				),
+				new TextFormElement(
+					'secondary_contact_email',
+					'E-Mail',
+					'^(?:[^@]+@[^@]+\\.[^@]+)?$',	//	E-mails can't be encapsulated by regexes, but here's some basic requirements
+					$org->secondary_contact_email
+				),
+				new TextFormElement(
+					'secondary_contact_phone',
+					'Phone',
+					'^[\\d\\-\\s\\(\\)\\+]*$',	//	Optional
+					$org->secondary_contact_phone
+				),
+				new TextFormElement(
+					'secondary_contact_fax',
+					'Fax',
+					'^[\\d\\-\\s\\(\\)\\+]*$',	//	Optional but with character restrictions
+					$org->secondary_contact_fax
+				)
+			)
+		);
+		
 		
 		$elements[]=new SubmitFormElement(
 			'Submit'
