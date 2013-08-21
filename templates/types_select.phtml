@@ -1,0 +1,10 @@
+<?php
+
+	global $request;
+	
+	foreach ($this->types as $type):
+	
+?>
+<div class="top_link"><a href="<?php	echo(htmlspecialchars($request->MakeLink('membership_types',$type->id)));	?>"><?php	echo(htmlspecialchars($type->name));	?></a></div>
+<?php	endforeach;	?>
+<div class="top_link"><a href="<?php	echo(htmlspecialchars($request->MakeLink('membership_types','add')));	?>">Add Membership Type</a></div>

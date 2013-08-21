@@ -1,0 +1,128 @@
+<form method="POST" id="form">
+
+
+	<div>
+	
+		<div>Name:</div>
+		
+		<div><input type="text" name="name" value="<?php	echo(htmlspecialchars($this->type->name));	?>" /></div>
+	
+	</div>
+	
+	
+	<div>
+	
+		<div>Price:</div>
+		
+		<div>$ <input type="text" name="price" value="<?php	echo(htmlspecialchars(sprintf('%.2f',$this->type->price)));	?>" /></div>
+	
+	</div>
+	
+	
+	<div>
+	
+		<div>Description:</div>
+		
+		<div><textarea name="description"><?php	echo(htmlspecialchars($this->type->description));	?></textarea></div>
+		
+	</div>
+	
+	
+	<div>
+	
+		<div>Sort Order:</div>
+		
+		<div><input type="text" name="order" value="<?php	echo(htmlspecialchars($this->type->order));	?>" /></div>
+	
+	</div>
+	
+	
+	<div>
+	
+		<div>Show on Membership Application?</div>
+		
+		<div><input type="checkbox" name="show" value="<?php	echo(htmlspecialchars(TRUE_STRING));	?>"<?php	if ($this->type->show):	?> checked<?php	endif;	?> /></div>
+	
+	</div>
+	
+	
+	<div>
+	
+		<div>Municipality?</div>
+		
+		<div><input type="checkbox" name="is_municipality" value="<?php	echo(htmlspecialchars(TRUE_STRING));	?>"<?php	if ($this->type->is_municipality):	?> checked<?php	endif;	?> /></div>
+	
+	</div>
+	
+	
+	<input type="submit" name="Submit" value="Submit" />
+
+
+</form>
+
+
+<script type="text/javascript">
+
+
+	var form=document.getElementById('form');
+	
+	
+	function verify_form () {
+	
+		var verified=true;
+	
+		var name=form.elements['name'];
+		
+		if (name.value.trim()==='') {
+		
+			ErrorElement(name);
+			verified=false;
+		
+		} else {
+		
+			UnerrorElement(name);
+		
+		}
+		
+		var price=form.elements['price'];
+		
+		if (IsNumeric(price.value.trim())) {
+		
+			UnerrorElement(price);
+		
+		} else {
+		
+			ErrorElement(price);
+			verified=false;
+		
+		}
+		
+		var order=form.elements['order'];
+		
+		if (
+			IsNumeric(order.value.trim()) &&
+			(((+order.value.trim())%1)===0)
+		) {
+		
+			UnerrorElement(order);
+		
+		} else {
+		
+			ErrorElement(order);
+			verified=false;
+		
+		}
+		
+		return verified;
+	
+	}
+	
+	
+	AddCallbackToEvent(
+		form,
+		'onsubmit',
+		verify_form
+	);
+
+
+</script>
