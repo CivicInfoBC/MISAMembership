@@ -104,6 +104,24 @@ CREATE TABLE `organizations` (
 
 
 /*
+ *	Notes regarding organizations.
+ */
+CREATE TABLE `organization_notes` (
+	`id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+	`org_id` int(11) unsigned NOT NULL,
+	`text` text NOT NULL,
+	`created` datetime NOT NULL,
+	`created_by` int(11) unsigned NOT NULL,
+	`modified` datetime NOT NULL,
+	`modified_by` int(11) unsigned NOT NULL,
+	PRIMARY KEY (`id`),
+	FOREIGN KEY (`org_id`) REFERENCES `organizations`(`id`),
+	FOREIGN KEY (`created_by`) REFERENCES `users`(`id`),
+	FOREIGN KEY (`modified_by`) REFERENCES `users`(`id`)
+);
+
+
+/*
  *	Membership year table.
  *
  *	Allows information to be attached
