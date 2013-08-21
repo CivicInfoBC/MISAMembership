@@ -1,79 +1,103 @@
 <?php
 
 	global $request;
-
+	
+	
 	$org=$this->org;
-	$type=$this->type;
-
-	$view_org=array(
-		'Organization ID' => 'id',
-		'Name' => 'name',
-		'Address' => 'address1',
-		'Address (Continued)' => 'address2',
-		'City' => 'city',
-		'Province/State & Country' => function () use ($org) {
-			
-			return htmlspecialchars(
-				(is_null($org->territorial_unit) || ($org->territorial_unit===''))
-					?	$org->country
-					:	$org->country.' - '.$org->territorial_unit
-			);
-			
-		},
-		'Postal/Zip Code' => 'postal_code',
-		'Web Address' => function () use ($org) {
-		
-			return (
-				(!is_null($org->url) && ($org->url!==''))
-					?	sprintf(
-							'<a href="%1$s">%1$s</a>',
-							htmlspecialchars($org->url)
-						)
-					:	''
-			);
-		
-		},
-		'Phone' => 'phone',
-		'Fax' => 'fax',
-		'Type' => function () use ($type) {	return htmlspecialchars($type);	},
-		'Primary Contact Name' => 'contact_name',
-		'Primary Contact Title' => 'contact_title',
-		'Primary Contact E-Mail' => 'contact_email',
-		'Primary Contact Phone' => 'contact_phone',
-		'Primary Contact Fax' => 'contact_fax',
-		'Secondary Contact Name' => 'secondary_contact_name',
-		'Secondary Contact Title' => 'secondary_contact_title',
-		'Secondary Contact E-Mail' => 'secondary_contact_email',
-		'Secondary Contact Phone' => 'secondary_contact_phone',
-		'Secondary Contact Fax' => 'secondary_contact_fax'/*,
-		'Enabled' => function () use ($org) {	return htmlspecialchars($org->enabled ? 'Yes' : 'No');	},
-		'Perpetual' => function () use ($org) {	return htmlspecialchars($org->perpetual ? 'Yes' : 'No');	}*/
-	);
+	
+	$render=function ($label, $key) use ($org) {
+	
+		?><div><div><?php
+			echo(htmlspecialchars($label));
+		?>:</div><div><?php
+			echo(htmlspecialchars($org->$key));
+		?></div></div><?php
+	
+	}
 
 ?>
 
 
 <div class="object_display">
 
-	<?php	foreach ($view_org as $label=>$value):	?>
+	<?php
+	
+		$render('Organization ID','id');
+		$render('Name','name');
+		$render('Address','address1');
+		$render('Address (Continued)','address2');
+		$render('City','city');
+	
+	?>
 	
 	<div>
 	
-		<div>
+		<div>Province/State &amp; Country:</div>
 		
-			<?php	echo(htmlspecialchars($label));	?>:
-		
-		</div>
-		
-		<div>
-		
-			<?php	echo(($value instanceof Closure) ? $value() : htmlspecialchars($org->$value));	?>
-		
-		</div>
+		<div><?php
+			echo(
+				htmlspecialchars(
+					(is_null($org->territorial_unit) || ($org->territorial_unit===''))
+						?	$org->country
+						:	$org->country.' - '.$org->territorial_unit
+				)
+			);
+		?></div>
 	
 	</div>
 	
-	<?php	endforeach;	?>
+	<?php	$render('Postal/Zip Code','postal_code');	?>
+	
+	<div>
+	
+		<div>Web Address:</div>
+		
+		<div><a href="<?php
+			echo(htmlspecialchars($org->url));
+		?>"><?php
+			echo(htmlspecialchars($org->url));
+		?></a></div>
+	
+	</div>
+	
+	<?php
+	
+		$render('Phone','phone');
+		$render('Fax','fax');
+	
+	?>
+	
+	<div>
+	
+		<div>Type:</div>
+		
+		<div><?php	echo(htmlspecialchars($this->type));	?></div>
+	
+	</div>
+	
+	<h2>Primary Contact Information</h2>
+	
+	<?php
+	
+		$render('Name','contact_name');
+		$render('Title','contact_name');
+		$render('E-Mail','contact_email');
+		$render('Phone','contact_phone');
+		$render('Fax','contact_fax');
+	
+	?>
+	
+	<h2>Secondary Contact Information</h2>
+	
+	<?php
+	
+		$render('Name','secondary_contact_name');
+		$render('Title','secondary_contact_name');
+		$render('E-Mail','secondary_contact_email');
+		$render('Phone','secondary_contact_phone');
+		$render('Fax','secondary_contact_fax');
+	
+	?>
 
 </div>
 
