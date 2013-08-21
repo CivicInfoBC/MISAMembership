@@ -54,7 +54,9 @@ if (!String.prototype.trim) String.prototype.trim=function () {
  */
 function AddClass (obj, class_name) {
 
-	obj.className=obj.className+' '+class_name;
+	var regex=new RegExp('(?:^|\\s)'+RegExp.escape(class_name)+'(?:\\s|$)');
+	
+	if (!regex.test(obj.className)) obj.className+=' '+class_name;
 
 }
 
@@ -69,7 +71,10 @@ function AddClass (obj, class_name) {
  */
 function RemoveClass (obj, class_name) {
 
-	var regex=new RegExp(RegExp.escape(class_name));
+	var regex=new RegExp(
+		'(?:^|\\s)'+RegExp.escape(class_name)+'(?:\\s|$)',
+		'g'
+	);
 
 	obj.className=obj.className.replace(regex,'');
 
