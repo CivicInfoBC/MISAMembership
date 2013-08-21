@@ -31,21 +31,10 @@
 	//	of the membership types, so
 	//	fetch, sort, and arrange them
 	//	into a convenient collection
-	$mt->types=Organization::GetTypes();
+	$types=Organization::GetTypes();
+	$mt->types=array();
 	
-	for ($i=0;$i<count($mt->types);) {
-	
-		if (!$mt->types[$i]->show) {
-		
-			unset($mt->types[$i]);
-			
-			continue;
-		
-		}
-		
-		++$i;
-	
-	}
+	foreach ($types as $type) if ($type->show) $mt->types[]=$type;
 	
 	usort(
 		$mt->types,
