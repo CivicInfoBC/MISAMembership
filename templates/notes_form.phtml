@@ -1,0 +1,108 @@
+<?php	global $request;	?><form method="POST" id="form">
+
+
+	<div>
+	
+		<div>Organization:</div>
+		
+		<div><a href="<?php
+			echo(htmlspecialchars($request->MakeLink('organization',$this->organization->id)));
+		?>"><?php
+			echo(htmlspecialchars($this->organization->name));
+		?></a></div>
+	
+	</div>
+	
+	
+	<div>
+	
+		<div>Text:</div>
+		
+		<div><textarea name="text"><?php	echo(htmlspecialchars($this->note->text));	?></textarea></div>
+	
+	</div>
+	
+	
+	<?php	if (isset($this->note->created)):	?>
+	<div>
+	
+		<div>Created:</div>
+		
+		<div><?php	echo(htmlspecialchars($this->note->created->format('F jS, Y g:i:s A')));	?></div>
+	
+	</div>
+	<?php	endif;	?>
+	
+	
+	<?php	if (isset($this->created_by)):	?>
+	<div>
+	
+		<div>Created By:</div>
+		
+		<div><a href="<?php
+			echo(htmlspecialchars($request->MakeLink(null,$this->created_by->id)));
+		?>"><?php
+			echo(htmlspecialchars($this->created_by->Name('F L')));
+		?></a></div>
+	
+	</div>
+	<?php	endif;	?>
+	
+	
+	<?php	if (isset($this->note->modified)):	?>
+	<div>
+	
+		<div>Last Modified:</div>
+		
+		<div><?php	echo(htmlspecialchars($this->note->modified->format('F jS, Y g:i:s A')));	?></div>
+	
+	</div>
+	<?php	endif;	?>
+	
+	
+	<?php	if (isset($this->modified_by)):	?>
+	<div>
+	
+		<div>Last Modified By:</div>
+		
+		<div><a href="<?php
+			echo(htmlspecialchars($request->MakeLink(null,$this->modified_by->id)));
+		?>"><?php
+			echo(htmlspecialchars($this->modified_by->Name('F L')));
+		?></a></div>
+	
+	</div>
+	<?php	endif;	?>
+	
+	
+	<input type="submit" value="Submit" name="Submit" />
+
+
+</form>
+
+
+<script type="text/javascript">
+
+
+	var form=document.getElementById('form');
+	
+	
+	function verify_form () {
+	
+		var verified=true;
+		
+		
+		
+		return verified;
+	
+	}
+	
+	
+	AddCallbackToEvent(
+		form,
+		'onsubmit',
+		verify_form
+	);
+
+
+</script>

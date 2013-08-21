@@ -905,6 +905,37 @@
 		
 		
 		/**
+		 *
+		 */
+		public function GetNotes () {
+		
+			//	Get database access
+			global $dependencies;
+			$conn=$dependencies[ORG_DB];
+			
+			if (($query=$conn->query(
+				sprintf(
+					'SELECT * FROM `organization_notes` WHERE `org_id`=\'%s\'',
+					$conn->real_escape_string($this->id)
+				)
+			))===false) throw new Exception($conn->error);
+			
+			$retr=array();
+			
+			if ($query->num_rows===0) return $retr;
+			
+			for (
+				$row=new MySQLRow($query);
+				!is_null($row);
+				$row=$row->Next()
+			) $retr[]=$row->ToObject();
+			
+			return $retr;
+		
+		}
+		
+		
+		/**
 		 *	Gets an iterator which allows you to
 		 *	traverse the various properties of the
 		 *	organization.

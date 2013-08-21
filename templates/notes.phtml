@@ -1,0 +1,133 @@
+<?php	global $request;	?>
+
+
+<h1>Notes</h1>
+
+
+<div class="top_link"><a href="<?php
+	echo(
+		htmlspecialchars(
+			$request->MakeLink(
+				'note',
+				array(
+					'add',
+					$this->org->id
+				)
+			)
+		)
+	);
+?>">Add Note</a></div>
+
+
+<?php	if (count($this->notes)===0):	?>
+
+
+<div class="no_results">No notes</div>
+
+
+<?php
+
+	else:
+
+		foreach ($this->notes as $note):		
+		
+?><hr />
+
+
+<div class="object_display">
+
+	<div>
+	
+		<div>Created:</div>
+		
+		<div><?php	echo(htmlspecialchars($note->created->format('F jS, Y g:i:s A')));	?></div>
+		
+	</div>
+	
+	<div>
+		
+		<div>Created By:</div>
+		
+		<div><a href="<?php
+			echo(
+				htmlspecialchars(
+					$request->MakeLink(
+						null,
+						$note->created_by->id
+					)
+				)
+			);
+		?>"><?php	echo(htmlspecialchars($note->created_by->Name('F L')));	?></a></div>
+		
+	</div>
+	
+	<div>
+		
+		<div>Last Modified:</div>
+		
+		<div><?php	echo(htmlspecialchars($note->modified->format('F jS, Y g:i:s A')));	?></div>
+		
+	</div>
+	
+	<div>
+		
+		<div>Last Modified By:</div>
+		
+		<div><a href="<?php
+			echo(
+				htmlspecialchars(
+					$request->MakeLink(
+						null,
+						$note->modified_by->id
+					)
+				)
+			);
+		?>"><?php	echo(htmlspecialchars($note->modified_by->Name('F L')));	?></a></div>
+		
+	</div>
+
+	<div><?php
+	
+		preg_match_all(
+			'/^(.*)$/mu',
+			$note->text,
+			$matches
+		);
+		
+		foreach ($matches[1] as $match):
+		
+			$match=MBString::Trim($match);
+		
+			?><p><?php
+			
+				if ($match===''):
+				
+					?>&nbsp;<?php
+					
+				else:
+				
+					echo(htmlspecialchars($match));
+					
+				endif;
+				
+			?></p><?php
+		
+		endforeach;
+	
+	?></div>
+	
+	<div class="top_link"><a href="<?php
+		echo(
+			htmlspecialchars(
+				$request->MakeLink(
+					'note',
+					$note->id
+				)
+			)
+		);
+	?>">Edit this Note</a></div>
+
+</div>
+
+
+<?php	endforeach;endif;	?>

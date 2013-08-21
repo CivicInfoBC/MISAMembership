@@ -81,8 +81,7 @@
 	//	information we have all the information we
 	//	need to dispatch to a template
 	if (!$add && $read_only) {
-		
-		$template->org=$org;
+	
 		$template->type=Organization::GetType($org->membership_type_id);
 		$template->users=$org->GetUsers();
 		
@@ -398,6 +397,42 @@
 		
 			$templates[]='org_users.phtml';
 			$templates[]='payment_info.phtml';
+			
+			//	Only admins can view notes
+			if ($user->type==='admin') {
+			
+				$template->notes=$org->GetNotes();
+				
+				usort(
+					$template->notes,
+					function ($note1, $note2) {
+					
+						$ts1=$note1->modified->getTimestamp();
+						$ts2=$note2->modified->getTimestamp();
+						
+						if ($ts1>$ts2) return -1;
+						if ($ts1<$ts2) return 1;
+						
+						return 0;
+					
+					}
+				);
+				
+				$templates[]='notes.phtml';
+				
+				foreach ($template->notes as &$note) {
+				
+					$note->created_by=User::GetByID($note->created_by);
+					$note->modified_by=User::GetByID($note->modified_by);
+					
+					if (
+						is_null($note->created_by) ||
+						is_null($note->modified_by)
+					) error(HTTP_INTERNAL_SERVER_ERROR);
+				
+				}
+			
+			}
 		
 		}
 		

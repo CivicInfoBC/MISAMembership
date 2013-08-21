@@ -735,3 +735,14 @@ table a {
 	margin-right: auto;
 
 }
+
+
+hr {
+
+	width: 80%;
+	border-top: 1px black solid;
+	border-bottom: none;
+	border-left: none;
+	border-right: none;
+
+}
