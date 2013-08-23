@@ -81,6 +81,28 @@ function RemoveClass (obj, class_name) {
 }
 
 
+/**
+ *	Checks to see if a CSS class is set on
+ *	a given object.
+ *
+ *	\param [in] obj
+ *		The object to check.
+ *	\param [in] class_name
+ *		The CSS class to check for.
+ *
+ *	\return
+ *		\em true if \em obj has \em class_name,
+ *		\em false otherwise.
+ */
+function HasClass (obj, class_name) {
+
+	var regex=new RegExp('(?:^|\\s)'+RegExp.escape(class_name)+'(?:\\s|$)');
+	
+	return regex.test(obj.className);
+
+}
+
+
 function ErrorElement (obj) {
 
 	//	Race up the DOM

@@ -19,19 +19,10 @@
 ?>">Add Note</a></div>
 
 
-<?php	if (count($this->notes)===0):	?>
+<div class="no_results"<?php	if (count($this->notes)!==0):	?> style="display:none;"<?php	endif;	?>>No notes</div>
 
 
-<div class="no_results">No notes</div>
-
-
-<?php
-
-	else:
-
-		foreach ($this->notes as $note):		
-		
-?><hr />
+<?php	foreach ($this->notes as $note):	?><hr />
 
 
 <div class="object_display">
@@ -138,7 +129,7 @@
 </div>
 
 
-<?php	endforeach;endif;	?>
+<?php	endforeach;	?>
 
 <script type="text/javascript">
 
@@ -176,6 +167,7 @@
 				if (ajax.status===200) {
 				
 					var note=this.parentNode.parentNode;
+					var parent=note.parentNode;
 					
 					var hr=note.previousSibling;
 					while (
@@ -186,9 +178,15 @@
 						)
 					) hr=hr.previousSibling;
 					
-					if (hr) hr.parentNode.removeChild(hr);
+					if (hr) parent.removeChild(hr);
 					
-					note.parentNode.removeChild(note);
+					parent.removeChild(note);
+					
+					if (parent.getElementsByClassName('object_display').length===0) {
+					
+						parent.getElementsByClassName('no_results')[0].style.display='inherit';
+					
+					}
 				
 				} else {
 				
