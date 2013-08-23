@@ -103,6 +103,26 @@ function HasClass (obj, class_name) {
 }
 
 
+function legacy_getElementsByClassName (class_name) {
+
+	var elements=this.getElementsByTagName('*');
+	
+	var retr=new Array();
+	
+	for (var i=0;i<elements.length;++i)
+	if (HasClass(elements[i],class_name))
+	retr.push(elements[i]);
+	
+	return retr;
+
+};
+
+
+if ((typeof HTMLDocument!=='undefined') && !HTMLDocument.prototype.getElementsByClassName) HTMLDocument.prototype.getElementsByClassName=legacy_getElementsByClassName;
+if ((typeof Element!=='undefined') && !Element.prototype.getElementsByClassName) Element.prototype.getElementsByClassName=legacy_getElementsByClassName;
+if ((typeof Node!=='undefined') && !Node.prototype.getElementsByClassName) Node.prototype.getElementsByClassName=legacy_getElementsByClassName;
+
+
 function ErrorElement (obj) {
 
 	//	Race up the DOM
