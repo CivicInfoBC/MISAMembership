@@ -29,11 +29,11 @@
 	
 	} else {
 	
-		//	EDITING
+		//	EDITING OR DELETING
 		
 		$add=false;
-	
-		$id=$request->GetArg(0);
+		
+		$id=($request->GetArg(0)==='delete') ? $request->GetArg(1) : $request->GetArg(0);
 		
 		$curr_user=(
 			is_numeric($id) &&
@@ -43,6 +43,106 @@
 		//	Make sure that user actually
 		//	exists
 		if (is_null($curr_user)) error(HTTP_BAD_REQUEST);
+		
+		//	Check to see if user can delete
+		//	target user
+		//
+		//	Users may delete other users
+		//	if:
+		//
+		//	1.	They themselves are not the
+		//		target user
+		//	AND EITHER
+		//	2.	They are an administrator
+		//	OR
+		//	3.	They are a superuser of the
+		//		same organization as the
+		//		target user
+		//	AND
+		//	4.	The target user is not an
+		//		administrator
+		$can_delete=(
+			($user->id!==$curr_user->id) &&
+			(
+				($user->type==='admin') ||
+				(
+					($curr_user->type!=='admin') &&
+					($user->type==='superuser') &&
+					($user->org_id===$curr_user->org_id)
+				)
+			)
+		);
+	
+	}
+	
+	
+	$template=new Template(WHERE_TEMPLATES);
+	
+	
+	$conn=$dependencies['MISADBConn'];
+	
+	
+	//	If deleting, perform permissions check,
+	//	perform deletion (if appropriate), and
+	//	end
+	if ($request->GetArg(0)==='delete') {
+	
+
+		if (!$can_delete) error(HTTP_FORBIDDEN);
+		
+		//	Lock table
+		if ($conn->query(
+			'LOCK TABLES `users` WRITE, `sessions` WRITE, `organization_notes` WRITE'
+		)===false) throw new Exception($conn->error);
+		
+		try {
+
+			if (
+				//	Delete all the user's sessions
+				($conn->query(
+					sprintf(
+						'DELETE FROM `sessions` WHERE `user_id`=\'%s\'',
+						$conn->real_escape_string($curr_user->id)
+					)
+				)===false) ||
+				//	Delete user from all notes
+				($conn->query(
+					sprintf(
+						'UPDATE `organization_notes` SET `modified_by`=NULL WHERE `modified_by`=\'%s\'',
+						$conn->real_escape_string($curr_user->id)
+					)
+				)===false) ||
+				($conn->query(
+					sprintf(
+						'UPDATE `organization_notes` SET `created_by`=NULL WHERE `created_by`=\'%s\'',
+						$conn->real_escape_string($curr_user->id)
+					)
+				)===false) ||
+				//	Delete user
+				($conn->query(
+					sprintf(
+						'DELETE FROM `users` WHERE `id`=\'%s\'',
+						$conn->real_escape_string($curr_user->id)
+					)
+				)===false)
+			) throw new Exception($conn->error);
+		
+		} catch (Exception $e) {
+		
+			$conn->query('UNLOCK TABLES');
+			
+			throw $e;
+		
+		}
+		
+		if ($conn->query('UNLOCK TABLES')===false) throw new Exception($conn->error);
+		
+		$title='Delete User';
+		
+		$template->user=$curr_user;
+		Render($template,'delete_user.phtml');
+		
+		exit();
 	
 	}
 	
@@ -84,9 +184,6 @@
 				)
 	);
 	
-
-	$template=new Template(WHERE_TEMPLATES);
-	
 	
 	//	If we're just displaying the user
 	//	we have all the information we need
@@ -98,6 +195,19 @@
 		Render($template,'display_user.phtml');
 	
 	} else {
+	
+		//	Add top link if we're editing and
+		//	the current user can delete the
+		//	target user
+		if (!$add && $can_delete) $template->top_links=array(
+			$request->MakeLink(
+				null,
+				array(
+					'delete',
+					$curr_user->id
+				)
+			) => 'Delete this User'
+		);
 	
 		//	Users can always elevate to or
 		//	create users at their level of
@@ -218,7 +328,7 @@
 							'org_id',
 							$curr_user->org_id,
 							'Organization',
-							$dependencies['MISADBConn'],
+							$conn,
 							true,
 							'SELECT `id`,`name` FROM `organizations` ORDER BY `name`'
 						)
@@ -352,9 +462,7 @@
 			//	make sure -- if an e-mail is being
 			//	changed -- that the e-mail is unique.
 			
-			//	Get the database connection and lock
-			//	the user table
-			$conn=$dependencies['MISADBConn'];
+			//	Lock the user table
 			if ($conn->query('LOCK TABLES `users` WRITE')===false) throw new Exception($conn->error);
 			
 			try {

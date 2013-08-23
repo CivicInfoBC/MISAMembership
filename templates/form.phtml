@@ -41,6 +41,18 @@
 <?php	endif;	?>
 
 
+<?php
+
+	if (isset($this->top_links) && (count($this->top_links)!==0))
+	foreach ($this->top_links as $url=>$label):
+	
+?>
+
+<div class="top_link"><a href="<?php	echo(htmlspecialchars($url));	?>"><?php	echo(htmlspecialchars($label));	?></a></div>
+
+<?php	endforeach;	?>
+
+
 <?php	echo($this->form->Render());	?>
 
 
