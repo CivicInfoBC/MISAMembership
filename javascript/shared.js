@@ -17,11 +17,11 @@ function AddCallbackToEvent (obj, event, func) {
 	
 		var old_event=obj[event];
 	
-		obj[event]=function () {
+		obj[event]=function (e) {
 		
-			if (old_event) old_event();
+			if (old_event) old_event(e);
 			
-			return func();
+			return func(e);
 		
 		}
 	

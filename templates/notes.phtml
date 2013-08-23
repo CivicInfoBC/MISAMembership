@@ -126,8 +126,88 @@
 			)
 		);
 	?>">Edit this Note</a></div>
+	
+	<div class="top_link">
+	
+		<input type="hidden" value="<?php	echo(htmlspecialchars($note->id));	?>" />
+	
+		<a href="#" class="delete_note">Delete this Note</a>
+	
+	</div>
 
 </div>
 
 
 <?php	endforeach;endif;	?>
+
+<script type="text/javascript">
+
+	
+	var delete_notes=document.getElementsByClassName('delete_note');
+	
+	for (var i=0;i<delete_notes.length;++i) AddCallbackToEvent(
+		delete_notes[i],
+		'onclick',
+		function () {
+		
+			var ajax=null;
+			
+			if (window.XMLHttpRequest) ajax=new XMLHttpRequest();
+			else if (window.ActiveXObject) ajax=new ActiveXObject('Microsoft.XMLHTTP');
+			
+			if (ajax) {
+			
+				var url=<?php	echo(json_encode($request->MakeLink('note','delete')));	?>;
+				
+				var regex=/\/$/;
+				
+				if (!regex.test(url)) url+='/';
+				
+				url+=this.parentNode.getElementsByTagName('input')[0].value+'/';
+				
+				ajax.open(
+					'GET',
+					url,
+					false
+				);
+				
+				ajax.send(null);
+				
+				if (ajax.status===200) {
+				
+					var note=this.parentNode.parentNode;
+					
+					var hr=note.previousSibling;
+					while (
+						hr &&
+						!(
+							hr.tagName &&
+							(hr.tagName.toUpperCase()==='HR')
+						)
+					) hr=hr.previousSibling;
+					
+					if (hr) hr.parentNode.removeChild(hr);
+					
+					note.parentNode.removeChild(note);
+				
+				} else {
+				
+					alert('ERROR: Could not delete note');
+				
+				}
+			
+			} else {
+			
+				alert('ERROR: Your browser does not support AJAX');
+			
+			}
+			
+			//	Prevent browser form following
+			//	the clicked link
+			return false;
+		
+		}
+	);
+	
+
+</script>

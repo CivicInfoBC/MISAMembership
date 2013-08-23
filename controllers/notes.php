@@ -15,6 +15,36 @@
 	$conn=$dependencies['MISADBConn'];
 	
 	
+	//	If we're deleting, do so
+	if ($request->GetArg(0)==='delete') {
+	
+		header('Content-Type: text/plain');
+	
+		if (!(
+			is_numeric($request->GetArg(1)) &&
+			(($id=intval($request->GetArg(1)))==floatval($request->GetArg(1)))
+		)) {
+		
+			header('HTTP/1.1 400 Bad Request');
+			
+			exit();
+		
+		}
+		
+		//	Attempt to delete
+		if ($conn->query(
+			sprintf(
+				'DELETE FROM `organization_notes` WHERE `id`=\'%s\'',
+				$conn->real_escape_string($id)
+			)
+		)===false) throw new Exception($conn->error);
+		
+		//	Do not proceed
+		exit();
+	
+	}
+	
+	
 	//	Gather necessary information
 	//	and validate arguments
 	if ($request->GetArg(0)==='add') {
