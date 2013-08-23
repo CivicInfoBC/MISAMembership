@@ -39,7 +39,15 @@
 		
 		<div>Created By:</div>
 		
-		<div><a href="<?php
+		<div><?php
+		
+			if (is_null($note->created_by)):
+			
+		?><strong>User no longer exists</strong><?php
+		
+			else:
+			
+		?><a href="<?php
 			echo(
 				htmlspecialchars(
 					$request->MakeLink(
@@ -48,7 +56,11 @@
 					)
 				)
 			);
-		?>"><?php	echo(htmlspecialchars($note->created_by->Name('F L')));	?></a></div>
+		?>"><?php	echo(htmlspecialchars($note->created_by->Name('F L')));	?></a><?php
+		
+			endif;
+			
+		?></div>
 		
 	</div>
 	
@@ -64,7 +76,15 @@
 		
 		<div>Last Modified By:</div>
 		
-		<div><a href="<?php
+		<div><?php
+		
+			if (is_null($note->modified_by)):
+		
+		?><strong>User no longer exists</strong><?php
+		
+			else:
+		
+		?><a href="<?php
 			echo(
 				htmlspecialchars(
 					$request->MakeLink(
@@ -73,7 +93,11 @@
 					)
 				)
 			);
-		?>"><?php	echo(htmlspecialchars($note->modified_by->Name('F L')));	?></a></div>
+		?>"><?php	echo(htmlspecialchars($note->modified_by->Name('F L')));	?></a><?php
+		
+			endif;
+		
+		?></div>
 		
 	</div>
 

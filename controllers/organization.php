@@ -424,11 +424,6 @@
 				
 					$note->created_by=User::GetByID($note->created_by);
 					$note->modified_by=User::GetByID($note->modified_by);
-					
-					if (
-						is_null($note->created_by) ||
-						is_null($note->modified_by)
-					) error(HTTP_INTERNAL_SERVER_ERROR);
 				
 				}
 			

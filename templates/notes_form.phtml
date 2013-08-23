@@ -23,7 +23,9 @@
 	</div>
 	
 	
-	<?php	if (isset($this->note->created)):	?>
+	<?php	if (!$this->add):	?>
+	
+	
 	<div>
 	
 		<div>Created:</div>
@@ -31,25 +33,29 @@
 		<div><?php	echo(htmlspecialchars($this->note->created->format('F jS, Y g:i:s A')));	?></div>
 	
 	</div>
-	<?php	endif;	?>
 	
 	
-	<?php	if (isset($this->created_by)):	?>
 	<div>
 	
 		<div>Created By:</div>
 		
-		<div><a href="<?php
+		<div><?php
+		
+			if (is_null($this->created_by)):
+			
+		?><strong>User no longer exists</strong><?php
+		
+			else:
+		
+		?><a href="<?php
 			echo(htmlspecialchars($request->MakeLink(null,$this->created_by->id)));
 		?>"><?php
 			echo(htmlspecialchars($this->created_by->Name('F L')));
-		?></a></div>
+		?></a><?php	endif;	?></div>
 	
 	</div>
-	<?php	endif;	?>
 	
 	
-	<?php	if (isset($this->note->modified)):	?>
 	<div>
 	
 		<div>Last Modified:</div>
@@ -57,21 +63,29 @@
 		<div><?php	echo(htmlspecialchars($this->note->modified->format('F jS, Y g:i:s A')));	?></div>
 	
 	</div>
-	<?php	endif;	?>
 	
 	
-	<?php	if (isset($this->modified_by)):	?>
 	<div>
 	
 		<div>Last Modified By:</div>
 		
-		<div><a href="<?php
+		<div><?php
+		
+			if (is_null($this->modified_by)):
+			
+		?><strong>User no longer exists</strong><?php
+		
+			else:
+		
+		?><a href="<?php
 			echo(htmlspecialchars($request->MakeLink(null,$this->modified_by->id)));
 		?>"><?php
 			echo(htmlspecialchars($this->modified_by->Name('F L')));
-		?></a></div>
+		?></a><?php	endif;	?></div>
 	
 	</div>
+	
+	
 	<?php	endif;	?>
 	
 	

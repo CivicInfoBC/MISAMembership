@@ -95,22 +95,21 @@
 		$template->created_by=User::GetByID($template->note->created_by);
 		$template->modified_by=User::GetByID($template->note->modified_by);
 		
-		//	If any of these aren't present,
-		//	given that they are referenced
-		//	by a foreign key, it's either a
+		//	If the organization isn't present,
+		//	given that it is referenced by a
+		//	foreign key, it's either a
 		//	database engine failure or a case
 		//	of concurrent access
-		if (
-			is_null($template->organization) ||
-			is_null($template->created_by) ||
-			is_null($template->modified_by)
-		) error(HTTP_INTERNAL_SERVER_ERROR);		
+		if (is_null($template->organization)) error(HTTP_INTERNAL_SERVER_ERROR);		
 	
 	} else {
 	
 		error(HTTP_BAD_REQUEST);
 	
 	}
+	
+	
+	$template->add=$add;
 	
 	
 	//	Handle POST backs
