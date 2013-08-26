@@ -53,7 +53,7 @@
 		 */
 		private static $codes=array(
 			0 => 'Login successful',
-			1 => 'Incorrect username or password',
+			1 => 'Incorrect e-mail or password',
 			2 => 'Your account is disabled',
 			3 => 'Your organization is disabled',
 			4 => 'Your membership fees are unpaid',
@@ -154,7 +154,6 @@
 			'first_name',
 			'last_name',
 			'title',
-			'username',
 			'address',
 			'address2',
 			'city',
@@ -610,7 +609,7 @@
 		/**
 		 *	Checks to see if the user
 		 *	account-in-question is able to login
-		 *	independent of correct username/password.
+		 *	independent of correct e-mail/password.
 		 *
 		 *	The criteria used are:
 		 *
@@ -677,23 +676,25 @@
 		
 		/**
 		 *	Retrieves the user object from the database
-		 *	that corresponds to a given username or
-		 *	e-mail address.
+		 *	that corresponds to a given e-mail address.
 		 *
-		 *	\param [in] $username
-		 *		The username or e-mail address based
-		 *		on which to retrieve a user object.
+		 *	\param [in] $email
+		 *		The e-mail address based on which to
+		 *		retrieve a user object.
 		 *
 		 *	\return
 		 *		A user object representing the user
-		 *		whose username or e-mail address is
-		 *		given by \em username, or \em null
-		 *		if such a user could not be found.
+		 *		whose e-mail address is given by
+		 *		\em email, or \em null if such a
+		 *		user could not be found.
 		 */
-		public static function GetByUsername ($username) {
+		public static function GetByUsername ($email) {
 		
 			//	Guard against nulls
-			if (is_null($username)) return null;
+			if (is_null($email)) return null;
+			
+			//	E-mails are all lowercase
+			$email=MBStrong::ToLower($email);
 			
 			//	Database access
 			global $dependencies;
@@ -707,9 +708,8 @@
 					FROM
 						`users`
 					WHERE
-						`username`=\'%1$s\' OR
-						`email`=\'%1$s\'',
-					$conn->real_escape_string($username)
+						`email`=\'%s\'',
+					$conn->real_escape_string($email)
 				)
 			);
 			
@@ -797,8 +797,8 @@
 		 *	Attempts to log a user in and possibly
 		 *	generate them a session.
 		 *
-		 *	\param [in] $username
-		 *		The username the user supplied.
+		 *	\param [in] $email
+		 *		The e-mail the user supplied.
 		 *	\param [in] $password
 		 *		The password the user supplied.
 		 *	\param [in] $remember_me
@@ -822,20 +822,20 @@
 		 *		A LoginAttempt object representing
 		 *		the result of this login attempt.
 		 */
-		public static function Login ($username, $password, $remember_me=true, $real_ip=null) {
+		public static function Login ($email, $password, $remember_me=true, $real_ip=null) {
 		
 			//	Guard against nulls
 			if (
-				is_null($username) ||
+				is_null($email) ||
 				is_null($password)
 			) return new LoginAttempt(1);
 			
-			//	Sanitize username, remove leading/
-			//	trailing whitespace, make all
-			//	lower case.
-			$username=MBString::ToLower(
+			//	Sanitize e-mail address, remove
+			//	leading/trailing whitespace, make
+			//	all lower case.
+			$email=MBString::ToLower(
 				MBString::Trim(
-					$username
+					$email
 				)
 			);
 			
@@ -851,38 +851,17 @@
 					FROM
 						`users`
 					WHERE
-						`username`=\'%s\'',
-					$conn->real_escape_string($username)
+						`email`=\'%s\'',
+					$conn->real_escape_string($email)
 				)
 			);
 			
 			//	Throw on error
 			if ($query===false) throw new Exception($conn->error);
 			
-			//	See if the username matches an e-mail
-			//	address if there are no matching rows
-			if ($query->num_rows===0) {
-			
-				$query=$conn->query(
-					sprintf(
-						'SELECT
-							*
-						FROM
-							`users`
-						WHERE
-							`email`=\'%s\'',
-						$conn->real_escape_string($username)
-					)
-				);
-				
-				//	Throw on error
-				if ($query===false) throw new Exception($conn->error);
-				
-				//	Fail out if there are no
-				//	matching rows
-				if ($query->num_rows===0) return new LoginAttempt(1);
-			
-			}
+			//	Fail out if there are no
+			//	matching rows
+			if ($query->num_rows===0) return new LoginAttempt(1);
 			
 			//	Extract row
 			$row=new MySQLRow($query);
@@ -941,12 +920,12 @@
 						SET
 							`password`=\'%s\'
 						WHERE
-							`username`=\'%s\'',
+							`email`=\'%s\'',
 						$conn->real_escape_string(
 							//	New bcrypt hash
 							self::PasswordHash($password)
 						),
-						$conn->real_escape_string($username)
+						$conn->real_escape_string($email)
 					)
 				)===false) throw new Exception($conn->error);
 			
@@ -1366,14 +1345,6 @@
 		 *		address case corrected to upper case.
 		 *	-	\'m\' becomes the user's e-mail
 		 *		address without case correction.
-		 *	-	\'U\' becomes the user's username
-		 *		with initial case correction (i.e.
-		 *		conversion of leading lowercase to
-		 *		uppercase).
-		 *	-	\'u\' becomes the user's username
-		 *		in lowercase.
-		 *	-	\'n\' becomes the user's username
-		 *		without case correction.
 		 *
 		 *	All other characters are unaffected.
 		 *
@@ -1427,16 +1398,6 @@
 							return MBString::ToUpper($row['email']);
 						case 'm':
 							return $row['email'];
-						case 'U':
-							return preg_replace_callback(
-								'/^./u',
-								function ($matches) {	return MBString::ToUpper($matches[0]);	},
-								MBString::ToLower($row['username'])
-							);
-						case 'u':
-							return MBString::ToLower($row['username']);
-						case 'n':
-							return $row['username'];
 						default:
 							//	This should never happen,
 							//	but just in case...
