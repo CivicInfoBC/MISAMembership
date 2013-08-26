@@ -48,7 +48,7 @@
 	
 ?>
 
-<div class="top_link"><a href="<?php	echo(htmlspecialchars($url));	?>"><?php	echo(htmlspecialchars($label));	?></a></div>
+<div class="top_link"><a class="delete_user" href="<?php	echo(htmlspecialchars($url));	?>"><?php	echo(htmlspecialchars($label));	?></a></div>
 
 <?php	endforeach;	?>
 
@@ -81,6 +81,17 @@
 					?	'block'
 					:	'none';
 			
+		}
+	);
+	
+	var delete_user=document.getElementsByClassName('delete_user');
+	for (var i=0;i<delete_user.length;++i) AddCallbackToEvent(
+		delete_user[i],
+		'onclick',
+		function () {
+		
+			return confirm('Are you sure you want to delete this user?');
+		
 		}
 	);
 
