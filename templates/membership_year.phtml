@@ -1,0 +1,29 @@
+<form method="POST">
+
+	<div>
+	
+		<div>Membership year:</div>
+		
+		<div><?php	echo(htmlspecialchars($this->create_year));	?></div>
+	
+	</div>
+	
+	<input type="submit" class="create_year" name="Add" value="Add" />
+
+</form>
+
+
+<script type="text/javascript">
+
+	var create_year=document.getElementsByClassName('create_year');
+	for (var i=0;i<create_year.length;++i) AddCallbackToEvent(
+		create_year[i],
+		'onclick',
+		function () {
+		
+			return confirm('Are you sure you want to add this membership year?');
+		
+		}
+	);
+
+</script>
