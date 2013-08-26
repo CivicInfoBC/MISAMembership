@@ -31,7 +31,7 @@
 				
 				<td><?php	echo(htmlspecialchars($x->membership_type));	?></td>
 				
-				<td><input type="submit" value="Approve" name="<?php	echo(htmlspecialchars($x->id));	?>" /></td>
+				<td><input class="approve_organization" type="submit" value="Approve" name="<?php	echo(htmlspecialchars($x->id));	?>" /></td>
 				
 			</tr>
 				
@@ -42,3 +42,19 @@
 	</table>
 	
 </form>
+
+
+<script type="text/javascript">
+
+	var approve_organization=document.getElementsByClassName('approve_organization');
+	for (var i=0;i<approve_organization.length;++i) AddCallbackToEvent(
+		approve_organization[i],
+		'onclick',
+		function () {
+		
+			return confirm('Are you sure you want to approve this user?');
+		
+		}
+	);
+
+</script>
