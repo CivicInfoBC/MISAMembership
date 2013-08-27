@@ -468,6 +468,41 @@
 		}
 		
 		
+		public static function GetMembershipTypeQuery ($type, $complement) {
+		
+			//	We need a database connection
+			//	for escaping
+			global $dependencies;
+			$conn=$dependencies[USER_DB];
+			
+			if (!is_array($type)) $type=array($type);
+			
+			//	Generate WHERE clause
+			$or_clause='';
+			foreach ($type as $t) {
+			
+				if ($or_clause!=='') $or_clause.=' OR ';
+				
+				$or_clause.='`organizations`.`membership_type_id`=\''.$conn->real_escape_string($t).'\'';
+			
+			}
+			
+			//	Return query
+			return sprintf(
+				'SELECT
+					`users`.*
+				FROM
+					`users`,
+					`organizations`
+				WHERE
+					`users`.`org_id`=`organizations`.`id` AND
+					(%s)',
+				$or_clause
+			);
+		
+		}
+		
+		
 		public static function GetTypeQuery ($type, $complement=false) {
 		
 			if (!in_array($type,array('admin','superuser','user'),true)) $type='user';

@@ -521,6 +521,39 @@
 		}
 		
 		
+		public static function GetMembershipTypeQuery ($type, $complement) {
+		
+			//	We need a database connection
+			//	for escaping
+			global $dependencies;
+			$conn=$dependencies[ORG_DB];
+			
+			if (!is_array($type)) $type=array($type);
+			
+			//	Generate WHERE clause
+			$or_clause='';
+			foreach ($type as $t) {
+			
+				if ($or_clause!=='') $or_clause.=' OR ';
+				
+				$or_clause.='`membership_type_id`=\''.$conn->real_escape_string($t).'\'';
+			
+			}
+			
+			//	Return query
+			return sprintf(
+				'SELECT
+					*
+				FROM
+					`organizations`
+				WHERE
+					%s',
+				$or_clause
+			);
+		
+		}
+		
+		
 		/**
 		 *	Determines the number of organizations in a
 		 *	certain result set.

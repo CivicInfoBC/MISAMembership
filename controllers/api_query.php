@@ -56,6 +56,53 @@
 				}
 				
 				$query=$users ? User::GetKeywordQuery($keywords) : Organization::GetKeywordQuery($keywords);
+				
+			} else if ($api_request->query==='membership type') {
+			
+				if (isset($api_request->complement)) {
+				
+					if (!is_bool($api_request->complement)) api_error(HTTP_BAD_REQUEST);
+					
+					$complement=$api_request->complement;
+				
+				} else {
+				
+					$complement=false;
+				
+				}
+			
+				if (isset($api_request->membership_types)) {
+				
+					if (!is_array($api_request->membership_types)) api_error(HTTP_BAD_REQUEST);
+				
+					foreach ($api_request->membership_types as $type)
+					if (!is_integer($type)) api_error(HTTP_BAD_REQUEST);
+					
+					$query=$users ? User::GetMembershipTypeQuery(
+						$api_request->membership_types,
+						$complement
+					) : Organization::GetMembershipTypeQuery(
+						$api_request->membership_types,
+						$complement
+					);
+				
+				} else if (isset($api_request->membership_type)) {
+				
+					if (!is_integer($api_request->membership_type)) api_error(HTTP_BAD_REQUEST);
+					
+					$query=$users ? User::GetMembershipTypeQuery(
+						$api_request->membership_type,
+						$complement
+					) : Organization::GetMembershipTypeQuery(
+						$api_request->membership_type,
+						$complement
+					);
+				
+				} else {
+				
+					api_error(HTTP_BAD_REQUEST);
+				
+				}
 			
 			} else {
 			
@@ -201,7 +248,7 @@
 	//	To specify a certain result set:
 	//
 	//	{
-	//		"query":	"active"/"inactive"/"pending"/"keyword"
+	//		"query":	"active"/"inactive"/"pending"/"keyword"/"membership type"
 	//	}
 	//
 	//	"pending" is applicable to organizations only.
@@ -210,6 +257,14 @@
 	//	be set.  It can either be a string with whitespace-delimited
 	//	keywords, or an array of keywords (which will not be
 	//	recursively processed to break them up based on whitespace).
+	//
+	//	For the "membership type" query, the "membership type" or
+	//	"membership types" property must be set.  If "membership type"
+	//	is set, it must be an integer which identifies the ID of the
+	//	membership type whose organizations or users shall be retrieved.
+	//	If "membership_types" is set, it must be an array of integers
+	//	which identifies the IDs of the membership types whose organizations
+	//	or users shall be retrieved.
 	//
 	//	The response for count queries will be:
 	//
