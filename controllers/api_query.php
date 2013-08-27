@@ -124,7 +124,7 @@
 	}
 
 
-	//	An API query may be made for one of six things:
+	//	An API query may be made for one of seven things:
 	//
 	//	1.	A particular organization.
 	//	2.	A particular user.
@@ -134,13 +134,14 @@
 	//		result set.
 	//	6.	The number of users in a particular result
 	//		set.
+	//	7.	All membership types in the system.
 	//
 	//	A query is at least:
 	//
 	//	{
 	//		"action":	"query",
 	//		"api_key":	<API key of API consumer>,
-	//		"type":		"user"/"organization"/"users"/"organizations"/"user_count"/"organization_count"
+	//		"type":		"user"/"organization"/"users"/"organizations"/"user_count"/"organization_count"/"membership types"
 	//	}
 	
 	
@@ -439,6 +440,12 @@
 	
 		$api_result=array(
 			'count' => Organization::GetCount(get_query())
+		);
+		
+	} else if ($api_request->type==='membership types') {
+	
+		$api_result=array(
+			'results' => Organization::GetTypes()
 		);
 	
 	} else {
