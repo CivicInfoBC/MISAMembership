@@ -8,6 +8,9 @@
 	$template=new Template(WHERE_TEMPLATES);
 	
 	
+	AddStylesheet('membership.css');
+	
+	
 	$title='Membership Application Form';
 	
 	

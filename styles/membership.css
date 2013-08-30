@@ -1,0 +1,42 @@
+@charset "UTF-8";
+
+
+form > div > div {
+
+	text-align: left !important;
+
+}
+
+
+form > div > div:first-child {
+
+	width: 200px !important;
+
+}
+
+
+input[type="radio"] {
+
+	float: right;
+
+}
+
+
+h2 {
+
+	text-align: left;
+
+}
+
+
+.membership_type_select > div:first-child {
+
+	width: 25px !important;
+
+}
+
+.membership_type_select > div {
+
+	width: 95% !important;
+
+}
