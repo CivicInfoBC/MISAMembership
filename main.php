@@ -8,6 +8,10 @@
 	function Render ($inner_template, $file) {
 	
 		global $request;
+		global $top_menu;
+		
+		//	Get top menu via API
+		$top_menu=GetTopMenu();
 		
 		$template=new Template(WHERE_TEMPLATES);
 		
@@ -183,10 +187,6 @@
 	
 	//	Error handling
 	try {
-	
-	
-		//	Get top menu via API
-		$top_menu=GetTopMenu();
 	
 	
 		//	Initialize dependency container
