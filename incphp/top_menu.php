@@ -1,7 +1,7 @@
 <?php
 
 
-	def('TOP_MENU_URL','http://misa.itter.org/users/?action=get_top_menu');
+	def('TOP_MENU_URL','http://test.misa.bc.ca/users/?action=get_top_menu');
 
 
 	function GetTopMenu () {
