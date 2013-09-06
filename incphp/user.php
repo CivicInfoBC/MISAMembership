@@ -378,6 +378,23 @@
 		}
 		
 		
+		public static function GetOrganizationQuery ($org_id) {
+		
+			global $dependencies;
+		
+			return sprintf(
+				'SELECT
+					`users`.*
+				FROM
+					`users`
+				WHERE
+					`org_id`=\'%s\'',
+				$dependencies[USER_DB]->real_escape_string($org_id)
+			);
+		
+		}
+		
+		
 		public static function GetActiveQuery () {
 		
 			return 'SELECT

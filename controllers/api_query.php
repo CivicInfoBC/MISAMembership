@@ -103,6 +103,16 @@
 					api_error(HTTP_BAD_REQUEST);
 				
 				}
+				
+			} else if ($api_request->query==='organization') {
+			
+				if (!(
+					$users &&
+					isset($api_request->organization) &&
+					is_integer($api_request->organization)
+				)) api_error(HTTP_BAD_REQUEST);
+				
+				$query=User::GetOrganizationQuery($api_request->organization);
 			
 			} else {
 			
@@ -249,7 +259,7 @@
 	//	To specify a certain result set:
 	//
 	//	{
-	//		"query":	"active"/"inactive"/"pending"/"keyword"/"membership type"
+	//		"query":	"active"/"inactive"/"pending"/"keyword"/"membership type"/"organization"
 	//	}
 	//
 	//	"pending" is applicable to organizations only.
@@ -266,6 +276,10 @@
 	//	If "membership_types" is set, it must be an array of integers
 	//	which identifies the IDs of the membership types whose organizations
 	//	or users shall be retrieved.
+	//
+	//	For the "organization" query, it must be a query for users.
+	//	The "organization" property shall contain the organization.  That
+	//	organization's users shall be retrieved.
 	//
 	//	The response for count queries will be:
 	//
