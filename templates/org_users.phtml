@@ -10,7 +10,7 @@
 
 <?php	if (($user->type==='admin') || (($user->type==='superuser') && ($user->org_id===$this->org->id))):	?>
 
-<div class="top_link"><a href="<?php	echo(htmlspecialchars($request->MakeLink(null,'add')));	?>">Add User</a></div>
+<div class="top_link"><a href="<?php	echo(htmlspecialchars($request->MakeLink(null,'add',array('org_id' => $this->org->id))));	?>">Add User</a></div>
 
 <?php	endif;	?>
 

@@ -26,6 +26,15 @@
 		
 		//	Empty user with no properties
 		$curr_user=new User(array());
+		
+		//	If an organization ID was passed
+		//	in the query string, add it as
+		//	a property so it's preselected
+		if (
+			!is_null($org_id=$request->GetQueryString('org_id')) &&
+			is_numeric($org_id) &&
+			(($org_id_int=intval($org_id))==floatval($org_id))
+		) $curr_user->org_id=$org_id_int;
 	
 	} else {
 	
