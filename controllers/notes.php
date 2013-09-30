@@ -147,12 +147,11 @@
 				)
 			)===false) throw new Exception($conn->error);
 			
-			//	Redirect to edit page for
-			//	newly-created note
+			//	Redirect back to organization page
 			header(
 				'Location: '.$request->MakeLink(
-					'note',
-					$conn->insert_id
+					'organization',
+					$org_id
 				)
 			);
 			
@@ -188,6 +187,16 @@
 			//	client as well
 			$template->note->modified=new DateTime();
 			$template->modified_by=$user;
+			
+			//	Redirect back to organization page
+			header(
+				'Location: '.$request->MakeLink(
+					'organization',
+					$template->note->org_id
+				)
+			);
+			
+			exit();
 		
 		}
 	
