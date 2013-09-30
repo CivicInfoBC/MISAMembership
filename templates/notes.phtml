@@ -26,78 +26,33 @@
 
 
 <div class="object_display">
-
-	<div>
-	
-		<div>Created:</div>
-		
-		<div><?php	echo(htmlspecialchars($note->created->format('F jS, Y g:i:s A')));	?></div>
-		
-	</div>
 	
 	<div>
-		
-		<div>Created By:</div>
-		
-		<div><?php
-		
-			if (is_null($note->created_by)):
-			
-		?><strong>User no longer exists</strong><?php
-		
-			else:
-			
-		?><a href="<?php
-			echo(
-				htmlspecialchars(
-					$request->MakeLink(
-						null,
-						$note->created_by->id
-					)
-				)
-			);
-		?>"><?php	echo(htmlspecialchars($note->created_by->Name('F L')));	?></a><?php
-		
-			endif;
-			
-		?></div>
-		
-	</div>
 	
-	<div>
-		
-		<div>Last Modified:</div>
-		
-		<div><?php	echo(htmlspecialchars($note->modified->format('F jS, Y g:i:s A')));	?></div>
-		
-	</div>
-	
-	<div>
-		
 		<div>Last Modified By:</div>
 		
-		<div><?php
+		<div>
 		
-			if (is_null($note->modified_by)):
-		
-		?><strong>User no longer exists</strong><?php
-		
-			else:
-		
-		?><a href="<?php
-			echo(
-				htmlspecialchars(
-					$request->MakeLink(
-						null,
-						$note->modified_by->id
+			<?php	if (is_null($note->modified_by)):	?>
+			<strong>User no longer exists</strong>
+			<?php	else:	?>
+			<a href="<?php
+				echo(
+					htmlspecialchars(
+						$request->MakeLink(
+							null,
+							$note->modified_by->id
+						)
 					)
-				)
-			);
-		?>"><?php	echo(htmlspecialchars($note->modified_by->Name('F L')));	?></a><?php
+				);
+			?>"><?php	echo(htmlspecialchars($note->modified_by->Name('F L')));	?></a>
+			<?php	endif;	?>
+			
+			<br />
+			
+			<?php	echo(htmlspecialchars($note->modified->format('F jS, Y g:i:s A')));	?>
 		
-			endif;
-		
-		?></div>
+		</div>
 		
 	</div>
 
@@ -131,22 +86,22 @@
 	
 	?></div>
 	
-	<div class="top_link"><a href="<?php
-		echo(
-			htmlspecialchars(
-				$request->MakeLink(
-					'note',
-					$note->id
-				)
-			)
-		);
-	?>">Edit this Note</a></div>
-	
 	<div class="top_link">
 	
-		<input type="hidden" value="<?php	echo(htmlspecialchars($note->id));	?>" />
-	
-		<a href="#" class="delete_note">Delete this Note</a>
+		<a href="<?php
+			echo(
+				htmlspecialchars(
+					$request->MakeLink(
+						'note',
+						$note->id
+					)
+				)
+			);
+		?>">Edit</a>
+		
+		/
+		
+		<a href="#" class="delete_note">Delete</a>
 	
 	</div>
 
