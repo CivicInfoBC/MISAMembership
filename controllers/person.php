@@ -403,6 +403,12 @@
 					)
 		);
 		
+		$elements[]=new CheckBoxFormElement(
+			'opt_out',
+			$curr_user->opt_out,
+			'Hide contact details'
+		);
+		
 		$elements[]=new SubmitFormElement(
 			'Submit'
 		);

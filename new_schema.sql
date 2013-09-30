@@ -223,6 +223,7 @@ CREATE TABLE `users` (
 	--				organization to 'superuser'.
 	--	'admin'		May do everything.
 	`type` enum('user','superuser','admin') NOT NULL DEFAULT 'user',
+	`opt_out` bool DEFAULT '0',
 	PRIMARY KEY (`id`),
 	FOREIGN KEY (`org_id`) REFERENCES `organizations`(`id`),
 	UNIQUE KEY (`email`),
