@@ -319,7 +319,7 @@
 				new TextFormElement(
 					'phone',
 					'Phone',
-					'^[\\d\\-\\s\\(\\)\\+]+$',	//	Non-optional
+					'^.+$',	//	Non-optional
 					$curr_user->phone
 				),
 				new TextFormElement(
