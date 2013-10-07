@@ -18,18 +18,28 @@
 	//	If we're deleting, do so
 	if ($request->GetArg(0)==='delete') {
 	
-		header('Content-Type: text/plain');
-	
+		//	Verify that the ID we've been
+		//	passed is actually numeric
 		if (!(
 			is_numeric($request->GetArg(1)) &&
 			(($id=intval($request->GetArg(1)))==floatval($request->GetArg(1)))
-		)) {
+		)) error(HTTP_BAD_REQUEST);
 		
-			header('HTTP/1.1 400 Bad Request');
-			
-			exit();
+		//	Attempt to retrieve the organization
+		//	associated with this note so we
+		//	can redirect to it.
+		if (($query=$conn->query(
+			sprintf(
+				'SELECT `org_id` FROM `organization_notes` WHERE `id`=\'%s\'',
+				$conn->real_escape_string($id)
+			)
+		))===false) throw new Exception($conn->error);
 		
-		}
+		//	If there is no such note, this is
+		//	a bad request
+		if ($query->num_rows===0) error(HTTP_BAD_REQUEST);
+		
+		$org_id=MySQLRow::FetchObject($query)->org_id;
 		
 		//	Attempt to delete
 		if ($conn->query(
@@ -39,7 +49,15 @@
 			)
 		)===false) throw new Exception($conn->error);
 		
-		//	Do not proceed
+		//	Redirect
+		header(
+			'Location: '.$request->MakeLink(
+				'organization',
+				$org_id
+			)
+		);
+		
+		//	STOP
 		exit();
 	
 	}

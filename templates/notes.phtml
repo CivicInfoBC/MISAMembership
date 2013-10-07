@@ -22,169 +22,98 @@
 <div class="no_results"<?php	if (count($this->notes)!==0):	?> style="display:none;"<?php	endif;	?>>No notes</div>
 
 
-<?php	foreach ($this->notes as $note):	?><hr />
+<table>
 
-
-<div class="object_display">
+	<thead>
 	
-	<div>
+		<tr>
+		
+			<td>Name</td>
+			<td>Date</td>
+			<td>Text</td>
+		
+		</tr>
 	
-		<div>Last Modified By:</div>
+	</thead>
+	
+	<tbody>
+	
+		<?php	foreach ($this->notes as $note):	?>
 		
-		<div>
+		<tr>
 		
-			<?php	if (is_null($note->modified_by)):	?>
-			<strong>User no longer exists</strong>
-			<?php	else:	?>
-			<a href="<?php
-				echo(
-					htmlspecialchars(
-						$request->MakeLink(
-							null,
-							$note->modified_by->id
+			<td class="nowrap">
+			
+				<?php	if (is_null($note->modified_by)):	?>
+				<strong>Unknown</strong>
+				<?php	else:	?>
+				<a href="<?php
+					echo(
+						htmlspecialchars(
+							$request->MakeLink(
+								null,
+								$note->modified_by->id
+							)
 						)
-					)
-				);
-			?>"><?php	echo(htmlspecialchars($note->modified_by->Name('F L')));	?></a>
-			<?php	endif;	?>
+					);
+				?>"><?php	echo(htmlspecialchars($note->modified_by->Name('F L')));	?></a>
+				<?php	endif;	?>
+				
+			</td>
 			
-			<br />
+			<td class="nowrap">
 			
-			<?php	echo(htmlspecialchars($note->modified->format('F jS, Y g:i:s A')));	?>
-		
-		</div>
-		
-	</div>
-
-	<div><?php
-	
-		preg_match_all(
-			'/^(.*)$/mu',
-			$note->text,
-			$matches
-		);
-		
-		foreach ($matches[1] as $match):
-		
-			$match=MBString::Trim($match);
-		
-			?><p><?php
-			
-				if ($match===''):
-				
-					?>&nbsp;<?php
-					
-				else:
-				
-					echo(htmlspecialchars($match));
-					
-				endif;
-				
-			?></p><?php
-		
-		endforeach;
-	
-	?></div>
-	
-	<div class="top_link">
-	
-		<a href="<?php
-			echo(
-				htmlspecialchars(
-					$request->MakeLink(
-						'note',
-						$note->id
-					)
-				)
-			);
-		?>">Edit</a>
-		
-		/
-		
-		<a href="#" class="delete_note">Delete</a>
-	
-	</div>
-
-</div>
-
-
-<?php	endforeach;	?>
-
-<script type="text/javascript">
-
-	
-	var delete_notes=document.getElementsByClassName('delete_note');
-	
-	for (var i=0;i<delete_notes.length;++i) AddCallbackToEvent(
-		delete_notes[i],
-		'onclick',
-		function () {
-		
-			var ajax=null;
-			
-			if (window.XMLHttpRequest) ajax=new XMLHttpRequest();
-			else if (window.ActiveXObject) ajax=new ActiveXObject('Microsoft.XMLHTTP');
-			
-			if (ajax) {
-			
-				var url=<?php	echo(json_encode($request->MakeLink('note','delete')));	?>;
-				
-				var regex=/\/$/;
-				
-				if (!regex.test(url)) url+='/';
-				
-				url+=this.parentNode.getElementsByTagName('input')[0].value+'/';
-				
-				ajax.open(
-					'GET',
-					url,
-					false
-				);
-				
-				ajax.send(null);
-				
-				if (ajax.status===200) {
-				
-					var note=this.parentNode.parentNode;
-					var parent=note.parentNode;
-					
-					var hr=note.previousSibling;
-					while (
-						hr &&
-						!(
-							hr.tagName &&
-							(hr.tagName.toUpperCase()==='HR')
+				<a href="<?php
+					echo(
+						htmlspecialchars(
+							$request->MakeLink(
+								'note',
+								$note->id
+							)
 						)
-					) hr=hr.previousSibling;
-					
-					if (hr) parent.removeChild(hr);
-					
-					parent.removeChild(note);
-					
-					if (parent.getElementsByClassName('object_display').length===0) {
-					
-						parent.getElementsByClassName('no_results')[0].style.display='inherit';
-					
-					}
+					);
+				?>"><?php	echo(htmlspecialchars($note->modified->format('j/n/Y g:i:s A')));	?></a>
+			
+			</td>
+			
+			<td>
+			
+				<?php
 				
-				} else {
+					preg_match_all(
+						'/^(.*)$/mu',
+						$note->text,
+						$matches
+					);
+					
+					foreach ($matches[1] as $match):
+					
+						$match=MBString::Trim($match);
+					
+						?><p><?php
+						
+							if ($match===''):
+							
+								?>&nbsp;<?php
+								
+							else:
+							
+								echo(htmlspecialchars($match));
+								
+							endif;
+							
+						?></p><?php
+					
+					endforeach;
 				
-					alert('ERROR: Could not delete note');
-				
-				}
+				?>
 			
-			} else {
-			
-				alert('ERROR: Your browser does not support AJAX');
-			
-			}
-			
-			//	Prevent browser from following
-			//	the clicked link
-			return false;
+			</td>
 		
-		}
-	);
+		</tr>
+		
+		<?php	endforeach;	?>
 	
+	</tbody>
 
-</script>
+</table>

@@ -1,4 +1,24 @@
-<?php	global $request;	?><form method="POST" id="form">
+<?php	global $request;	?>
+
+
+<?php	if (!$this->add):	?>
+<div class="top_link"><a href="<?php
+	echo(
+		htmlspecialchars(
+			$request->MakeLink(
+				'note',
+				array(
+					'delete',
+					$this->note->id
+				)
+			)
+		)
+	);
+?>">Delete this Note</a></div>
+<?php	endif;	?>
+
+
+<form method="POST" id="form">
 
 
 	<div>
