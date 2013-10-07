@@ -473,6 +473,14 @@ form select {
 
 }
 
+#main > form > input[type="text"] {
+
+	margin-left: auto;
+	margin-right: auto;
+	display: block;
+
+}
+
 #main > form input[type="text"].wide {
 
 	width: 300px;

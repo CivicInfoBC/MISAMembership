@@ -1,0 +1,18 @@
+<?php	global $request;	?>
+
+
+<form method="post" action="<?php
+	echo(
+		htmlspecialchars(
+			$request->MakeLink(
+				'keyword'
+			)
+		)
+	);
+?>">
+
+	<input type="text" class="wide" name="keywords" />
+	
+	<input type="submit" name="Search" value="Search" />
+
+</form>

@@ -127,21 +127,25 @@
 			
 				Municipal Information Systems Association of BC
 				
-				<?php	if (!is_null($user) && ($user->type==='admin')):	?>
-				
 				<div id="keyword_search">
 				
-					<form method="get" action="<?php	echo(htmlspecialchars($request->MakeLink('keyword')));	?>">
+					<form method="<?php
 					
-						<input type="text" name="keywords" />
+						if (defined('SEARCH_METHOD')):
+						
+							echo(htmlspecialchars(SEARCH_METHOD));
+							
+						else:
+						
+					?>get<?php	endif;	?>" action="<?php	echo(htmlspecialchars(SEARCH_ACTION));	?>">
+					
+						<input type="text" name="s" placeholder="Search" />
 						
 						<input type="submit" name="search" value="Search" />
 					
 					</form>
 				
 				</div>
-				
-				<?php	endif;	?>
 			
 			</div>
 			
@@ -190,6 +194,7 @@
 					<a href="<?php	echo(htmlspecialchars($request->MakeLink('users')));	?>">Users</a>
 					<a href="<?php	echo(htmlspecialchars($request->MakeLink('organizations')));	?>">Organizations</a>
 					<a href="<?php	echo(htmlspecialchars($request->MakeLink('administration')));	?>">Administration</a>
+					<a href="<?php	echo(htmlspecialchars($request->MakeLink('keyword')));	?>">Search</a>
 					<?php	endif;	?>
 				
 				</div>
