@@ -205,18 +205,52 @@
 	
 	} else {
 	
-		//	Add top link if we're editing and
-		//	the current user can delete the
-		//	target user
-		if (!$add && $can_delete) $template->top_links=array(
-			$request->MakeLink(
-				null,
-				array(
-					'delete',
-					$curr_user->id
+		//	If we're not adding, add top
+		//	links
+		if (!$add) {
+		
+			$template->top_links=array();
+		
+			//	Add a link back to the user's
+			//	organization, provided the
+			//	user has an organization
+			if (!is_null($curr_user->organization)) $template->top_links[
+				$request->MakeLink(
+					'organization',
+					$curr_user->org_id
 				)
-			) => 'Delete this User'
-		);
+			]='Go to '.$curr_user->organization->name;
+			
+			//	If the currently logged in user
+			//	can delete this user, add a
+			//	link to do just that
+			if ($can_delete) {
+			
+				$delete_link=new HTMLElement(
+					'a',
+					array(
+						'href' => $request->MakeLink(
+							null,
+							array(
+								'delete',
+								$curr_user->id
+							)
+						),
+						'class' => 'delete_user'
+					)
+				);
+				
+				$delete_link->Children=array(
+					new HTMLTextElement(
+						'Delete this User'
+					)
+				);
+				
+				$template->top_links[]=$delete_link;
+			
+			}
+		
+		}
 	
 		//	Users can always elevate to or
 		//	create users at their level of

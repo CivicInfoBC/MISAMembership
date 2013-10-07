@@ -48,7 +48,15 @@
 	
 ?>
 
-<div class="top_link"><a class="delete_user" href="<?php	echo(htmlspecialchars($url));	?>"><?php	echo(htmlspecialchars($label));	?></a></div>
+<div class="top_link"><?php
+
+	if ($label instanceof HTMLElement):
+	
+		echo($label);
+		
+	else:
+	
+?><a href="<?php	echo(htmlspecialchars($url));	?>"><?php	echo(htmlspecialchars($label));	?></a><?php	endif;	?></div>
 
 <?php	endforeach;	?>
 
