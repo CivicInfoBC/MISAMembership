@@ -521,10 +521,25 @@
 					
 					if (!is_null($temp)) {
 					
+						//	Redirect based on the organization
+						//	the user was added to.
+						//
+						//	If they weren't added to an organization,
+						//	redirect to the user.
+						//
+						//	If the were added to an organization,
+						//	redirect to that organization.
 						header(
-							'Location: '.$request->MakeLink(
-								null,
-								$insert_id
+							'Location: '.(
+								is_null($temp->org_id)
+									?	$request->MakeLink(
+											null,
+											$insert_id
+										)
+									:	$request->MakeLink(
+											'organization',
+											$temp->org_id
+										)
 							)
 						);
 						
