@@ -172,6 +172,10 @@
 	}
 	
 	
+	//	Set cache settings
+	header('Cache-Control: private,must-revalidate,max-age=0');
+	
+	
 	//	Include all required libraries
 	require_once(WHERE_PHP_INCLUDES.'error.php');					//	Error reporting
 	require_once(WHERE_PHP_INCLUDES.'mb.php');						//	Multi-byte string handling
