@@ -75,7 +75,11 @@
 						`payment`.`org_id`=\'%s\' AND
 						`membership_years`.`start`<=NOW() AND
 						`membership_years`.`end`>=NOW() AND
-						`payment`.`paid`=\'1\'',
+						`payment`.`paid`=\'1\' AND
+						(
+							`type`=\'membership renewal\' OR
+							`type`=\'membership new\'
+						)',
 					$conn->real_escape_string($id)
 				)	
 			);
