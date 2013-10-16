@@ -837,6 +837,10 @@
 						(
 							`payment`.`paid` IS NULL OR
 							`payment`.`paid`=0
+						) AND
+						(
+							`payment`.`type`=\'membership new\' OR
+							`payment`.`type`=\'membership renewal\'
 						)
 					ORDER BY
 						`membership_years`.`start` ASC',
