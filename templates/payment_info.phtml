@@ -81,14 +81,30 @@
 				
 			?></a><?php	endif;	?></td>
 			<td><?php
+			
+				$type_str='';
+				switch ($x['type']->GetValue()) {
 				
-				echo(
-					htmlspecialchars(
-						($x['type']->GetValue()==='membership new')
-							?	'New'
-							:	'Renewal'
-					)
-				);
+					case 'membership new':
+						$type_str='New';
+						break;
+					case 'membership renewal':
+						$type_str='Renewal';
+						break;
+					case 'sponsor':
+						$type_str='Sponsorship';
+						break;
+					case 'conference':
+						$type_str='Conference';
+						break;
+					case 'other':
+					default:
+						$type_str='Other';
+						break;
+				
+				}
+				
+				echo(htmlspecialchars($type_str));
 				
 			?></td>
 			<td>$<?php	echo(htmlspecialchars(sprintf('%.2f',$x['subtotal']->GetValue())));	?></td>

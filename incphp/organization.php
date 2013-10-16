@@ -700,11 +700,7 @@
 					FROM
 						`payment`
 					WHERE
-						`org_id`=\'%s\' AND
-						(
-							`type`=\'membership renewal\' OR
-							`type`=\'membership new\'
-						)
+						`org_id`=\'%s\'
 					ORDER BY
 						`created` DESC',
 					$conn->real_escape_string($this->id)
