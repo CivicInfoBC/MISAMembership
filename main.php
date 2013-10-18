@@ -9,9 +9,12 @@
 	
 		global $request;
 		global $top_menu;
+		global $background_url;
 		
 		//	Get top menu via API
 		$top_menu=GetTopMenu();
+		//	Get background via API
+		$background_url=GetBackgroundURL();
 		
 		$template=new Template(WHERE_TEMPLATES);
 		
@@ -187,6 +190,7 @@
 	require_once(WHERE_PHP_INCLUDES.'html_element.php');			//	HTML element
 	require_once(WHERE_LOCAL_PHP_INCLUDES.'user.php');				//	User/login abstraction/encapsulation
 	require_once(WHERE_LOCAL_PHP_INCLUDES.'top_menu.php');			//	Top menu JSON consumer
+	require_once(WHERE_LOCAL_PHP_INCLUDES.'background.php');		//	Random backgroundp API wrapper
 	
 	
 	//	Error handling

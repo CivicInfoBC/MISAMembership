@@ -6,6 +6,7 @@
 	global $title;
 	global $display_payment_prompt;
 	global $top_menu;
+	global $background_url;
 
 ?><!doctype html>
 
@@ -65,28 +66,7 @@
 	
 	<body>
 	
-		<div id="header" style="background-image: url(<?php
-		
-			mt_srand();
-			
-			$bgs=array(
-				$request->MakeFileLink(
-					array(
-						'images',
-						'slide2.jpg'
-					)
-				),
-				$request->MakeFileLink(
-					array(
-						'images',
-						'winter.png'
-					)
-				)
-			);
-			
-			if (count($bgs)!==0) echo($bgs[mt_rand(0,count($bgs)-1)]);
-		
-		?>);">
+		<div id="header" style="background-image: url(<?php	echo($background_url);	?>);">
 		
 			<div id="banner">
 			
