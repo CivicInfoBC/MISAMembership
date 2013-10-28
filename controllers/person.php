@@ -86,6 +86,7 @@
 	
 	
 	$template=new Template(WHERE_TEMPLATES);
+	$template->user=$curr_user;
 	
 	
 	$conn=$dependencies['MISADBConn'];
@@ -148,7 +149,6 @@
 		
 		$title='Delete User';
 		
-		$template->user=$curr_user;
 		Render($template,'delete_user.phtml');
 		
 		exit();
