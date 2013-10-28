@@ -1,1 +1,31 @@
+<?php	global $request;	?>
+
+
 <p>User <strong><?php	echo(htmlspecialchars($this->user->Name('F L')));	?></strong> was deleted successfully.</p>
+
+<?php	if (!is_null($this->user->organization)):	?>
+<div class="top_link">
+
+	<a href="<?php
+	
+		echo(
+			htmlspecialchars(
+				$request->MakeLink(
+					'organization',
+					$this->user->organization->id
+				)
+			)
+		);
+	
+	?>">Return to <?php
+	
+		echo(
+			htmlspecialchars(
+				$this->user->organization->name
+			)
+		);
+	
+	?></a>
+	
+</div>
+<?php	endif;	?>
