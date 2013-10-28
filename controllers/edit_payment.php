@@ -43,10 +43,13 @@
 	
 	$template->types=array(
 		'membership renewal' => 'Membership Renewal',
-		'membership new' => 'New Membership',
+		'membership new' => 'New Membership'/*,
 		'sponsor' => 'Sponsor',
 		'conference' => 'Conference',
-		'other' => 'Other'
+		'other' => 'Other'*/
+		//	The above membership types exist, but should
+		//	not be exposed through the UI as per
+		//	Jason Birch Oct 16 2013
 	);
 	$template->messages=array();
 	$template->paymethods=array(
