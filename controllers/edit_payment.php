@@ -286,7 +286,7 @@
 			//	already for that membership year
 			if (
 				$dues &&
-				!$sql_check(
+				$sql_check(
 					sprintf(
 						'SELECT
 							COUNT(*)
@@ -296,7 +296,7 @@
 							`org_id`=\'%s\' AND
 							`membership_year_id`=\'%s\'',
 						$conn->real_escape_string($form->org_id),
-						$conn->real_escape_string($form->membership_year_Id)
+						$conn->real_escape_string($form->membership_year_id)
 					)
 				)
 			) $template->messages[]='That organization already has a payment for that membership year';
