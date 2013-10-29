@@ -61,11 +61,41 @@
 	);
 	
 	
+	//	If we're adding, we may be prepopulating
+	if ($add) {
+	
+		$org_id=$request->GetQueryString('org_id');
+		
+		if (!is_null($org_id)) {
+		
+			//	Try and fetch organization
+			if (is_null($org=Organization::GetByID($org_id))) error(HTTP_BAD_REQUEST);
+			
+			$form=new KeyValueStore();
+			
+			//	Preselect organization
+			$form->org_id=$org->id;
+			
+			//	Preselect membership type
+			$form->membership_type_id=$org->membership_type_id;
+			
+			//	Preselect payment type
+			$form->type='membership renewal';
+			
+			//	Pre-populate amount
+			$form->total=$org->Type()->price;
+			
+			//	Get unpaid years to try and preselect
+			//	a membership year ID
+			$unpaid=$org->UnpaidYears();
+			if (count($unpaid)!==0) $form->membership_year_id=$unpaid[count($unpaid)-1]->id;
+			
+		}
+	
 	//	If we're editing, we need to get the
 	//	row from the database so it can be
 	//	edited
-	unset($form);
-	if (!$add) {
+	} else {
 	
 		//	Check the ID to make sure it's
 		//	an integer et cetera

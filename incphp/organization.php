@@ -145,6 +145,42 @@
 		
 		
 		/**
+		 *	Retrieves the type of this organization.
+		 *
+		 *	\return
+		 *		An object representing the type of this
+		 *		organization.
+		 */
+		public function Type () {
+		
+			//	Fetch database connection
+			global $dependencies;
+			$conn=$dependencies[ORG_DB];
+			
+			//	Grab type from the database
+			$query=$conn->query(
+				sprintf(
+					'SELECT * FROM `membership_types` WHERE `id`=\'%s\'',
+					$conn->real_escape_string($this->membership_type_id)
+				)
+			);
+			
+			//	Throw on error
+			if ($query===false) throw new Exception($conn->error);
+			
+			//	If there are zero rows, throw
+			if ($query->num_rows===0) throw new Exception('Membership Type does not exist');
+			
+			//	Grab the row
+			$row=new MySQLRow($query);
+			
+			//	Return
+			return $row->ToObject();
+		
+		}
+		
+		
+		/**
 		 *	Retrieves the name of the type given by
 		 *	\em type_id.
 		 *
