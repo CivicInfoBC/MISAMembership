@@ -9,10 +9,10 @@
 	function get_query () {
 	
 		global $api_request;
+		
+		$users=($api_request->type==='users') || ($api_request->type==='user_count');
 	
 		if (isset($api_request->query)) {
-		
-			$users=($api_request->type==='users') || ($api_request->type==='user_count');
 		
 			//	A specific query was specified
 			if ($api_request->query==='active') {
