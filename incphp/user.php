@@ -746,7 +746,7 @@
 			if (is_null($email)) return null;
 			
 			//	E-mails are all lowercase
-			$email=MBStrong::ToLower($email);
+			$email=MBString::ToLower($email);
 			
 			//	Database access
 			global $dependencies;
