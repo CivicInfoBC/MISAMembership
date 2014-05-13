@@ -287,6 +287,18 @@
 				$user=User::Resume($request->GetQueryString(SESSION_KEY_KEY));
 				
 				if (!is_null($user->user)) User::SetCookie($request->GetQueryString(SESSION_KEY_KEY));
+				
+				unset($_GET[SESSION_KEY_KEY]);
+				
+				header(
+					'Location: '.$request->MakeLink(
+						$request->GetController(),
+						$request->GetArgs(),
+						$_GET
+					)
+				);
+				
+				exit();
 			
 			//	Attempt to regenerate a session from cookies
 			} else {
