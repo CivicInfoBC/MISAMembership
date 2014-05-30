@@ -353,7 +353,7 @@
 				new TextFormElement(
 					'phone',
 					'Phone',
-					'^.+$',	//	Non-optional
+					'',	//	Non-optional
 					$curr_user->phone
 				),
 				new TextFormElement(

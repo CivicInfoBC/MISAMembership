@@ -1,4 +1,4 @@
-<?php	require_once(WHERE_PHP_INCLUDES.'mb.php');	?>
+<?php	require_once(WHERE_PHP_INCLUDES.'mb.php');global $request;	?>
 
 
 <form method="POST">
@@ -23,7 +23,7 @@
 			
 			<tr>
 			
-				<td><?php	echo(htmlspecialchars($admin->Name('L, F')));	?></td>
+				<td><a href="<?php	echo(htmlspecialchars($request->MakeLink(null,$admin->id)));	?>"><?php	echo(htmlspecialchars($admin->Name('L, F')));	?></a></td>
 				<td><?php	echo(htmlspecialchars($admin->Name('e')));	?></td>
 				<td><input type="checkbox" name="<?php	echo(htmlspecialchars($admin->id));	?>"<?php
 				

@@ -456,11 +456,10 @@
 	
 		$template->form=$form;
 		$template->intro=array(
-			'Thank-you for applying for MISA BC membership!',
-			'Please fill out and submit the form below.  '.
-			'Once our membership administrator has confirmed your application details, '.
-			'you will receive information on how to pay your first year\'s membership dues.',
-			'We look forward to having you join our community!'
+			'Thank-you for your interest in MISA BC!',
+			'To apply for membership, please fill out the form below.  Out membership chair will confirm your information and then forward you details on how to pay your first year\'s membership dues.',
+			'We look forward to having you join our community!',
+			'If you have any questions, please contact our membership chair at: <a href="mailto:membership@misa.bc.ca">membership@misa.bc.ca</a>'
 		);
 		Render($template,'form.phtml');
 		
