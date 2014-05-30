@@ -1423,7 +1423,7 @@
 					switch ($matches[0]) {
 					
 						case 'F':
-							return FormatName($row['first_name']);
+							return FormatName($this->__get('first_name'));
 						case 'f':
 							//	Have to use preg_split otherwise
 							//	code points represented by multiple
@@ -1431,25 +1431,25 @@
 							//	illegal
 							$split=preg_split(
 								'/(?<!^)(?!$)/u',
-								$row['first_name']
+								$this->__get('first_name')
 							);
 							if (count($split)===0) return '';
 							return MBString::ToUpper($split[0]);
 						case 'L':
-							return FormatName($row['last_name']);
+							return FormatName($this->__get('last_name'));
 						case 'l':
 							$split=preg_split(
 								'/(?<!^)(?!$)/u',
-								$row['last_name']
+								$this->__get('last_name')
 							);
 							if (count($split)===0) return '';
 							return MBString::ToUpper($split[0]);
 						case 'e':
-							return MBString::ToLower($row['email']);
+							return MBString::ToLower($this->__get('email'));
 						case 'E':
-							return MBString::ToUpper($row['email']);
+							return MBString::ToUpper($this->__get('email'));
 						case 'm':
-							return $row['email'];
+							return $this->__get('email');
 						default:
 							//	This should never happen,
 							//	but just in case...
