@@ -6,22 +6,22 @@
 
 @font-face {
     font-family: 'source_sans_proregular';
-    src: url(http://www.misa.civicinfo.bc.ca/fonts/sourcesanspro-regular-webfont.eot);
-    src: url(http://www.misa.civicinfo.bc.ca/fonts/sourcesanspro-regular-webfont.eot?#iefix) format('embedded-opentype'),
-         url(http://www.misa.civicinfo.bc.ca/fonts/sourcesanspro-regular-webfont.woff) format('woff'),
-         url(http://www.misa.civicinfo.bc.ca/fonts/sourcesanspro-regular-webfont.ttf) format('truetype'),
-         url(http://www.misa.civicinfo.bc.ca/fonts/sourcesanspro-regular-webfont.svg#source_sans_proregular) format('svg');
+    src: url(https://membership.misa.bc.ca/fonts/sourcesanspro-regular-webfont.eot);
+    src: url(https://membership.misa.bc.ca/fonts/sourcesanspro-regular-webfont.eot?#iefix) format('embedded-opentype'),
+         url(https://membership.misa.bc.ca/fonts/sourcesanspro-regular-webfont.woff) format('woff'),
+         url(https://membership.misa.bc.ca/fonts/sourcesanspro-regular-webfont.ttf) format('truetype'),
+         url(https://membership.misa.bc.ca/fonts/sourcesanspro-regular-webfont.svg#source_sans_proregular) format('svg');
     font-weight: normal;
     font-style: normal;
 }
 
 @font-face {
     font-family: 'source_sans_prolight';
-    src: url(http://www.misa.civicinfo.bc.ca/fonts/sourcesanspro-light-webfont.eot);
-    src: url(http://www.misa.civicinfo.bc.ca/fonts/sourcesanspro-light-webfont.eot?#iefix) format('embedded-opentype'),
-         url(http://www.misa.civicinfo.bc.ca/fonts/sourcesanspro-light-webfont.woff) format('woff'),
-         url(http://www.misa.civicinfo.bc.ca/fonts/sourcesanspro-light-webfont.ttf) format('truetype'),
-         url(http://www.misa.civicinfo.bc.ca/fonts/sourcesanspro-light-webfont.svg#source_sans_prolight) format('svg');
+    src: url(https://membership.misa.bc.ca/fonts/sourcesanspro-light-webfont.eot);
+    src: url(https://membership.misa.bc.ca/fonts/sourcesanspro-light-webfont.eot?#iefix) format('embedded-opentype'),
+         url(https://membership.misa.bc.ca/fonts/sourcesanspro-light-webfont.woff) format('woff'),
+         url(https://membership.misa.bc.ca/fonts/sourcesanspro-light-webfont.ttf) format('truetype'),
+         url(https://membership.misa.bc.ca/fonts/sourcesanspro-light-webfont.svg#source_sans_prolight) format('svg');
     font-weight: normal;
     font-style: normal;
 }
@@ -245,7 +245,7 @@ body {
 	padding-top: 30px;
 	padding-left: 20px;
 	padding-right: 20px;
-	background: url(http://www.misa.civicinfo.bc.ca/images/diagonal-bg.png);
+	background: url(https://membership.misa.bc.ca/images/diagonal-bg.png);
 
 }
 
@@ -350,7 +350,7 @@ body {
 	margin-top: 40px;
 	padding-top: 89px;
 	padding-bottom: 10px;
-	background-image: url(http://www.misa.civicinfo.bc.ca/images/diagonal_small.png);
+	background-image: url(https://membership.misa.bc.ca/images/diagonal_small.png);
 	background-repeat: repeat-x;
 	text-align: center;
 	font-size: 14px;
