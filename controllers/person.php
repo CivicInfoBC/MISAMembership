@@ -288,13 +288,13 @@
 				new TextFormElement(
 					'first_name',
 					'First Name',
-					'^\\w+$',	//	Non-optional, one word
+					'\\w',	//	Non-optional, at least one non-whitespace character
 					$curr_user->first_name
 				),
 				new TextFormElement(
 					'last_name',
 					'Last Name',
-					'^\\w+$',	//	Non-optional, one word
+					'\\w',	//	Non-optional, at least one non-whitespace character
 					$curr_user->last_name
 				),
 				new TextFormElement(

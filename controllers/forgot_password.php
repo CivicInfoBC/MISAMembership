@@ -99,7 +99,7 @@
 		$elements=array(
 			new TextFormElement(
 				'username',
-				'Username/E-Mail',
+				'E-Mail',
 				'^.+$'	//	Non-optional
 			),
 			new SubmitFormElement(
