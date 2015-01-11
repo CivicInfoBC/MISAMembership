@@ -245,7 +245,7 @@
 				new TextFormElement(
 					'contact_phone',
 					'Phone',
-					'^[\\d\\-\\s\\(\\)\\+]+$',	//	Non-optional
+					'^[\\d\\-\\s\\(\\)\\+]*$',	//	Optional but with character restrictions
 					$org->contact_phone
 				),
 				new TextFormElement(
