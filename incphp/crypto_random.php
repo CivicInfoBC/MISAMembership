@@ -28,6 +28,12 @@
 			$pr=$capi_util->GetRandom($num_bytes,0);
 			$pr=base64_decode($pr);
 		
+		//	The COM class doesn't exist, use
+		//	OpenSSL
+		} else if (function_exists('openssl_random_pseudo_bytes')) {
+		
+			$pr=openssl_random_pseudo_bytes($num_bytes);
+		
 		//	None of the above, fail
 		} else {
 		
