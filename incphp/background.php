@@ -1,7 +1,7 @@
 <?php
 
 
-	def('BACKGROUND_URL','http://test.misa.bc.ca/members/?action=get_header_image');
+	def('BACKGROUND_URL','https://www.misa.bc.ca/members/?action=get_header_image');
 	
 	
 	function GetBackgroundURL () {
@@ -11,7 +11,8 @@
 		$curl_opts=array(
 			CURLOPT_URL => BACKGROUND_URL,
 			CURLOPT_HEADER => false,
-			CURLOPT_RETURNTRANSFER => true
+			CURLOPT_RETURNTRANSFER => true/*,
+			CURLOPT_SSL_VERIFYPEER => false*/
 		);
 		
 		if (
