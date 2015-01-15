@@ -59,7 +59,7 @@
 			$filename=$this->__template_dir.$file;
 			
 			if (file_exists($filename)) include($filename);
-			else throw new \Exception(sprintf(
+			else throw new Exception(sprintf(
 				self::$include_error,
 				$this->__template_dir,
 				$file
