@@ -4,6 +4,11 @@
 	require_once('./script_config.php');
 	
 	
+	error_reporting(-1);
+	ini_set('display_errors', 'On');
+	set_time_limit(120);
+	
+	
 	function get_mysql_conn ($username, $password, $host, $database, $set_charset=true) {
 	
 		$conn=new mysqli(
@@ -184,6 +189,15 @@
 	}
 	
 	
+	function make_name ($first, $last) {
+	
+		if (is_null($first) || is_null($last)) return null;
+		
+		return sprintf('%s %s',$first,$last);
+	
+	}
+	
+	
 	//	Get database connections
 	
 	try {
@@ -215,9 +229,11 @@
 	//	Delete from tables in case we're re-running
 	//	this script
 	if (
-		($new_conn->query('DELETE FROM `users`')===false) ||
-		($new_conn->query('DELETE FROM `organizations`')===false) ||
+		($new_conn->query('DELETE FROM `sessions`')===false) ||
+		($new_conn->query('DELETE FROM `organization_notes`')===false) ||
+		($new_conn->query('DELETE FROM `users`')===false) ||*/
 		($new_conn->query('DELETE FROM `payment`')===false) ||
+		($new_conn->query('DELETE FROM `organizations`')===false) ||
 		($new_conn->query('DELETE FROM `membership_types`')===false) ||
 		($new_conn->query('DELETE FROM `membership_years`')===false)
 	) die($new_conn->error);
@@ -275,12 +291,33 @@
 	$query=$old_conn->query(
 		'SELECT
 			`organizations`.*,
+			`primary`.`firstname` AS `primary_firstname`,
+			`primary`.`lastname` AS `primary_lastname`,
+			`primary`.`title` AS `primary_title`,
+			`primary`.`email` AS `primary_email`,
+			`primary`.`phone` AS `primary_phone`,
+			`primary`.`fax` AS `primary_fax`,
+			`secondary`.`firstname` AS `secondary_firstname`,
+			`secondary`.`lastname` AS `secondary_lastname`,
+			`secondary`.`title` AS `secondary_title`,
+			`secondary`.`email` AS `secondary_email`,
+			`secondary`.`phone` AS `secondary_phone`,
+			`secondary`.`fax` AS `secondary_fax`,
 			`membershiptypes`.`name` AS `membership_type_name`
 		FROM
-			`organizations`,
+			`organizations`
+			LEFT OUTER JOIN `users` AS `primary` ON (
+				`primary`.`organizationsId`=`organizations`.`id` AND
+				`primary`.`orgContact`=\'primary\'
+			)
+			LEFT OUTER JOIN `users` as `secondary` ON (
+				`secondary`.`organizationsId`=`organizations`.`id` AND
+				`secondary`.`orgContact`=\'secondary\'
+			),
 			`membershiptypes`
 		WHERE
-			`membershiptypes`.`id`=`organizations`.`membershipTypesId`'
+			`membershiptypes`.`id`=`organizations`.`membershipTypesId`
+		GROUP BY `organizations`.`id`'
 	);
 	
 	//	Die on error
@@ -290,6 +327,10 @@
 	while (!is_null($row=$query->fetch_assoc())) {
 	
 		scrub_row($row);
+		
+		//	Don't know why this is necessary, but there's a row
+		//	with all NULLs coming through, so this is a band-aid
+		if (is_null($row['name'])) continue;
 	
 		//	We need to get the new ID for this organization's
 		//	membership type
@@ -376,14 +417,14 @@
 				%10$s,
 				%11$s,
 				%12$s,
-				%8$s,
 				%13$s,
 				%14$s,
 				%15$s,
 				%16$s,
 				%17$s,
 				%18$s,
-				%19$s
+				%19$s,
+				%20$s
 			)',
 			make_sql($new_conn,$row['name']),					//	1
 			make_sql($new_conn,$row['address1']),				//	2
@@ -394,16 +435,17 @@
 			make_sql($new_conn,$country),						//	7
 			make_sql($new_conn,$row['contactTelephone']),		//	8
 			make_sql($new_conn,$mt_id),							//	9
-			make_sql($new_conn,$row['contactName']),			//	10
-			make_sql($new_conn,$row['contactTitle']),			//	11
-			make_sql($new_conn,$row['contactEmail']),			//	12
-			make_sql($new_conn,$row['contactFax']),				//	13
-			make_sql($new_conn,$row['secondContactName']),		//	14
-			make_sql($new_conn,$row['secondContactTitle']),		//	15
-			make_sql($new_conn,$row['secondContactEmail']),		//	16
-			make_sql($new_conn,$row['secondContactTelephone']),	//	17
-			make_sql($new_conn,$row['secondContactFax']),		//	18
-			make_sql($new_conn,$enabled)						//	19
+			make_sql($new_conn,make_name($row['primary_firstname'],$row['primary_lastname'])),	//	10
+			make_sql($new_conn,$row['primary_title']),			//	11
+			make_sql($new_conn,$row['primary_email']),			//	12
+			make_sql($new_conn,$row['primary_phone']),			//	13
+			make_sql($new_conn,$row['primary_fax']),			//	14
+			make_sql($new_conn,make_name($row['secondary_firstname'],$row['secondary_lastname'])),	//	15
+			make_sql($new_conn,$row['secondary_title']),		//	16
+			make_sql($new_conn,$row['secondary_email']),		//	17
+			make_sql($new_conn,$row['secondary_phone']),		//	18
+			make_sql($new_conn,$row['secondary_fax']),			//	19
+			make_sql($new_conn,$enabled)						//	20
 		);
 		
 		//	Insert data
@@ -530,7 +572,6 @@
 				`last_name`,
 				`email`,
 				`title`,
-				`username`,
 				`password`,
 				`address`,
 				`address2`,
@@ -542,7 +583,8 @@
 				`fax`,
 				`org_id`,
 				`enabled`,
-				`type`
+				`type`,
+				`opt_out`
 			) VALUES (
 				%1$s,
 				%2$s,
@@ -566,19 +608,26 @@
 			make_sql($new_conn,$row['lastName']),	//	2
 			make_sql($new_conn,$row['email']),		//	3
 			make_sql($new_conn,$row['title']),		//	4
-			make_sql($new_conn,$row['userName']),	//	5
-			make_sql($new_conn,$row['password']),	//	6
-			make_sql($new_conn,$row['address1']),	//	7
-			make_sql($new_conn,$row['address2']),	//	8
-			make_sql($new_conn,$row['city']),		//	9
-			make_sql($new_conn,$row['postalCode']),	//	10
-			make_sql($new_conn,$terr_unit),			//	11
-			make_sql($new_conn,$country),			//	12
-			make_sql($new_conn,$row['phone']),		//	13
-			make_sql($new_conn,$row['fax']),		//	14
-			make_sql($new_conn,$org_id),			//	15
-			make_sql($new_conn,$enabled),			//	16
-			make_sql($new_conn,$type)				//	17
+			make_sql($new_conn,$row['password']),	//	5
+			make_sql($new_conn,$row['address1']),	//	6
+			make_sql($new_conn,$row['address2']),	//	7
+			make_sql($new_conn,$row['city']),		//	8
+			make_sql($new_conn,$row['postalCode']),	//	9
+			make_sql($new_conn,$terr_unit),			//	10
+			make_sql($new_conn,$country),			//	11
+			make_sql($new_conn,$row['phone']),		//	12
+			make_sql($new_conn,$row['fax']),		//	13
+			make_sql($new_conn,$org_id),			//	14
+			make_sql($new_conn,$enabled),			//	15
+			make_sql($new_conn,$type),				//	16
+			make_sql(
+				$new_conn,
+				(
+					($row['orgContact']==='primary') ||
+					($row['orgContact']==='secondary') ||
+					($row['orgContact']==='true')
+				) ? 0 : 1
+			)										//	17
 		);
 		
 		//	Insert data
@@ -610,40 +659,32 @@
 	//	Get payment information
 	$query=$old_conn->query(
 		'SELECT
-			`membershiptypes`.`name` AS `membershiptype_name`,
-			`organizations`.`name` AS `org_name`,
-			`transactions`.*
+			`subquery`.*,
+			`membershiptypes`.`name` AS `membershiptype_name`
 		FROM
-			`transactions`
-			LEFT OUTER JOIN (
+			(
 				SELECT
-					*
+					`transactions`.*,
+					COALESCE(`onlinepaymentlog`.`membershipTypeId`,`organizations`.`membershipTypesId`) AS `membershipTypeId`,
+					`organizations`.`name` AS `org_name`
 				FROM
-					`onlinepaymentlog`
+					`transactions`
+					LEFT OUTER JOIN `onlinepaymentlog`
+					ON (
+						`onlinepaymentlog`.`organizationsId`=`transactions`.`organizationsId` AND
+						`transactions`.`membershipYear`=YEAR(`onlinepaymentlog`.`paymentdate`) AND
+						`onlinepaymentlog`.`amount`=`transactions`.`amount`
+					),
+					`organizations`
 				WHERE
-					`conferenceExhibitorId` IS NULL AND
-					`conferenceDelegateId` IS NULL AND
-					`transaction_approved`<>0 AND
-					`transaction_result`=\'Transaction Normal\' AND
-					`membershiptypeId` IS NOT NULL
-				GROUP BY
-					`organizationsId`,
-					YEAR(`paymentdate`)
-			) `onlinepaymentlog` ON (
-				`onlinepaymentlog`.`organizationsId`=`transactions`.`organizationsId` AND
-				`transactions`.`amount`=`onlinepaymentlog`.`amount` AND
-				YEAR(`onlinepaymentlog`.`paymentdate`)=`transactions`.`membershipyear`
-			)
-			LEFT OUTER JOIN `membershiptypes`
-			ON `membershiptypes`.`id`=`onlinepaymentlog`.`membershipTypeId`,
-			`organizations`
+					`transactions`.`appliesto`=\'membership\' AND
+					COALESCE(`onlinepaymentlog`.`transaction_approved`,1)=1 AND
+					COALESCE(`onlinepaymentlog`.`transaction_result`,\'Transaction Normal\')=\'Transaction Normal\' AND
+					`organizations`.`id`=`transactions`.`organizationsId`
+			) AS `subquery`,
+			`membershiptypes`
 		WHERE
-			`transactions`.`appliesto`=\'membership\' AND
-			`organizations`.`id`=`transactions`.`organizationsId` AND
-			NOT (
-				`membershiptypes`.`id` IS NULL AND
-				`transactions`.`amount`=\'0.00\'
-			)'
+			`subquery`.`membershipTypeId`=`membershiptypes`.`id`'
 	);
 	
 	if ($query===false) die($old_conn->error);
@@ -671,13 +712,7 @@
 		
 		if ($org_query===false) die($new_conn->error);
 		
-		if ($org_query->num_rows===0) {
-		
-			var_dump($row);
-		
-			die('Org mismatch');
-			
-		}
+		if ($org_query->num_rows===0) die('Org mismatch');
 		
 		$org_row=$org_query->fetch_assoc();
 		$org_id=$org_row['id'];
@@ -787,6 +822,8 @@
 		)===false) die($new_conn->error);
 	
 	}
+	
+	echo('Done');
 
 
 ?>
