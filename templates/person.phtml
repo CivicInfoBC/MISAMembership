@@ -1,0 +1,40 @@
+<script type="text/javascript">
+
+	function verify_form () {
+	
+		var verified=true;
+		<?php	echo($this->form->RenderVerify());	?>
+		return verified;
+	
+	}
+
+</script>
+
+
+<?php	echo($this->form->Render());	?>
+
+
+<script type="text/javascript">
+
+	AddCallbackToEvent(
+		document.getElementsByTagName('form')[0],
+		'onsubmit',
+		verify_form
+	);
+	
+	AddCallbackToEvent(
+		document.getElementsByTagName('form')[0].elements['territorial_unit'],
+		'onchange',
+		function () {
+		
+			var obj=document.getElementsByTagName('form')[0].elements['territorial_unit'];
+		
+			document.getElementsByTagName('form')[0].elements['territorial_unit_other'].style.display=
+				(obj.options[obj.selectedIndex].value==='')
+					?	'block'
+					:	'none';
+			
+		}
+	);
+
+</script>

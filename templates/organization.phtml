@@ -1,0 +1,25 @@
+<script type="text/javascript">
+
+	function verify_form () {
+	
+		var verified=true;
+		<?php	echo($this->form->RenderVerify());	?>
+		return verified;
+	
+	}
+
+</script>
+
+
+<?php	echo($this->form->Render());	?>
+
+
+<script type="text/javascript">
+
+	AddCallbackToEvent(
+		document.getElementsByTagName('form')[0],
+		'onsubmit',
+		verify_form
+	);
+
+</script>
