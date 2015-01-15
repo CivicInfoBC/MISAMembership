@@ -16,7 +16,7 @@
 	define('HTTP_FORBIDDEN',403);
 
 
-	function error ($param=null, $desc=null) {
+	function error ($param=null, $desc=null, \Exception $ex=null) {
 	
 		//	Headers that shall be added to
 		//	outgoing e-mails

@@ -479,7 +479,8 @@
 	
 		error(
 			HTTP_INTERNAL_SERVER_ERROR,
-			$e->getMessage()
+			$e->getMessage(),
+			$e
 		);
 	
 	}
