@@ -1,0 +1,53 @@
+<?php
+
+
+	header('Content-Type: text/csv;charset=utf-8');
+	
+	$filename='report.csv';
+	if (isset($this->report->name)) $filename=$this->report->name.'.csv';
+	header(sprintf('Content-Disposition: attachment;filename=%s',$filename));
+	
+	
+	function csv_escape ($str) {
+	
+		return sprintf(
+			'"%s"',
+			preg_replace(
+				'/"/u',
+				'""',
+				$str
+			)
+		);
+	
+	}
+	
+	
+	$first=true;
+	foreach ($this->report->columns as $title) {
+	
+		if ($first) $first=false;
+		else echo(',');
+		
+		echo(csv_escape($title));
+	
+	}
+	
+	
+	while (!is_null($row=$this->query->fetch_assoc())) {
+	
+		echo("\r\n");
+	
+		$first=true;
+		foreach (array_keys($this->report->columns) as $column) {
+		
+			if ($first) $first=false;
+			else echo(',');
+			
+			echo(csv_escape($row[$column]));
+		
+		}
+	
+	}
+
+
+?>
