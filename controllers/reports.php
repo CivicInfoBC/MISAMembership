@@ -32,7 +32,7 @@
 	
 	//	Retrieve requested report
 	$name=$request->GetArg(0);
-	if (is_null($name) || !isset($reports[$name])) error(HTTP_NOT_FOUND);
+	if (is_null($name) || !isset($reports[$name])) error(404);
 	$report=$reports[$name];
 	
 	
