@@ -82,16 +82,28 @@
 					LEFT JOIN membership_types t ON o.membership_type_id=t.id
 					LEFT JOIN (
 						SELECT
-							org_id,
-							MAX(datepaid),
-							id payment_id
+							p.org_id,
+							p.datepaid,
+							p.id payment_id
 						FROM
-							payment
+							payment p,
+							(
+								SELECT
+									org_id,
+									MAX(datepaid) datepaid
+								FROM
+									payment
+								WHERE
+									paid AND
+									type IN (\'membership renewal\',\'membership other\')
+								GROUP BY
+									org_id
+							) m
 						WHERE
-							paid AND
-							type IN (\'membership renewal\',\'membership other\')
+							p.datepaid=m.datepaid AND
+							p.org_id=m.org_id
 						GROUP BY
-							org_id
+							p.org_id
 					) ps ON o.id = ps.org_id
 					LEFT JOIN (
 						SELECT
@@ -159,6 +171,30 @@
 					users u
 					LEFT JOIN organizations o ON u.org_id = o.id
 					LEFT JOIN membership_types m ON o.membership_type_id = m.id'
+		),
+		'cc_payments' => (object)array(
+			'columns' => array(
+				'org_name' => 'Organization Name',
+				'datepaid' => 'Date Paid',
+				'paymethod' => 'Card Type',
+				'cardname' => 'Name on Credit Card',
+				'amountpaid' => 'Amount'
+			),
+			'query' =>
+				'SELECT
+					`organizations`.`name` `org_name`,
+					`payment`.`datepaid` `datepaid`,
+					`payment`.`paymethod` `paymethod`,
+					`payment`.`cardname` `cardname`,
+					CONCAT(\'$\',FORMAT(`payment`.`amountpaid`,2)) `amountpaid`
+				FROM
+					`organizations`,
+					`payment`
+				WHERE
+					`organizations`.`id`=`payment`.`org_id` AND
+					`cardname` IS NOT NULL
+				ORDER BY
+					`datepaid` DESC'
 		)
 	);
 	
