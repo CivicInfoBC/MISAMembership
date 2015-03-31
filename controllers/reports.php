@@ -142,7 +142,9 @@
 				'org_id' => 'Organization ID',
 				'org_name' => 'Organization Name',
 				'membership_type' => 'Membership Type',
-				'is_municipality' => 'Municipality?'
+				'is_municipality' => 'Municipality?',
+				'org_enabled' => 'Organization Enabled?',
+				'org_perpetual' => 'Organization Perpetual?'
 			),
 			'query' =>
 				'SELECT
@@ -166,7 +168,9 @@
 					IF(u.opt_out,\'Yes\',\'No\') opt_out,
 					o.name org_name,
 					m.name membership_type,
-					IF(m.is_municipality,\'Yes\',\'No\') is_municipality
+					IF(m.is_municipality,\'Yes\',\'No\') is_municipality,
+					IF(o.enabled,\'Yes\',\'No\') org_enabled,
+					IF(o.perpetual,\'Yes\',\'No\') org_perpetual
 				FROM
 					users u
 					LEFT JOIN organizations o ON u.org_id = o.id
