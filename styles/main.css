@@ -504,7 +504,7 @@ form select {
 }
 
 
-#main > form input[type="submit"] {
+#main > form input[type="submit"], #main > form button[type="submit"] {
 
 	display: block;
 	margin-left: auto;
@@ -516,7 +516,7 @@ form select {
 }
 
 
-#main > form > input[type="submit"] {
+#main > form > input[type="submit"], #main > form > button[type="submit"] {
 
 	width: 200px;
 

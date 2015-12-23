@@ -228,6 +228,52 @@
 		
 		
 		/**
+		 *	Deletes this user and all associated data
+		 *	(sessions, payments, et cetera) from the database.
+		 */
+		public function Delete () {
+			
+			//	This was never saved in the database to begin with
+			if (!isset($this->user['id'])) throw new \LogicException('User was never saved to the database');
+			
+			$id=$this->user['id'];
+			global $dependencies;
+			$conn=$dependencies[USER_DB];
+			$esc=$conn->real_escape_string($id);
+			
+			if (
+				//	Delete/clear associated
+				($conn->query(
+					sprintf(
+						'DELETE FROM `sessions` WHERE `user_id`=\'%s\'',
+						$esc
+					)
+				)===false) ||
+				($conn->query(
+					sprintf(
+						'UPDATE `organization_notes` SET `created_by`=NULL WHERE `created_by`=\'%s\'',
+						$esc
+					)
+				)===false) ||
+				($conn->query(
+					sprintf(
+						'UPDATE `organization_notes` SET `modified_by`=NULL WHERE `modified_by`=\'%s\'',
+						$esc
+					)
+				)===false) ||
+				//	Delete user itself
+				($conn->query(
+					sprintf(
+						'DELETE FROM `users` WHERE `id`=\'%s\'',
+						$esc
+					)
+				)===false)
+			) throw new \Exception($conn->error);
+			
+		}
+		
+		
+		/**
 		 *	Saves this user's data to the database.
 		 *
 		 *	If no ID is specified for this user, a new

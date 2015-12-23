@@ -336,6 +336,62 @@
 		}
 		
 		
+		private function delete_users () {
+			
+			foreach ($this->GetUsers() as $u) $u->Delete();
+			
+		}
+		
+		
+		/**
+		 *	Deletes this organization and all associated data
+		 *	(users, payments, et cetera) from the database.
+		 */
+		public function Delete () {
+			
+			//	This was never saved in the database to
+			//	begin with
+			if (!isset($this->row['id'])) throw new \LogicException('Organization was never saved to the database');
+			
+			$this->delete_users();
+			
+			$id=$this->row['id'];
+			global $dependencies;
+			$conn=$dependencies[ORG_DB];
+			$esc=$conn->real_escape_string($id);
+			
+			if (
+				//	Delete associated
+				($conn->query(
+					sprintf(
+						'DELETE FROM `organization_notes` WHERE `org_id`=\'%s\'',
+						$esc
+					)
+				)===false) ||
+				($conn->query(
+					sprintf(
+						'DELETE FROM `payment` WHERE `org_id`=\'%s\'',
+						$esc
+					)
+				)===false) ||
+				($conn->query(
+					sprintf(
+						'DELETE FROM `api_keys` WHERE `org_id`=\'%s\'',
+						$esc
+					)
+				)===false) ||
+				//	Delete organization itself
+				($conn->query(
+					sprintf(
+						'DELETE FROM `organizations` WHERE `id`=\'%s\'',
+						$esc
+					)
+				)===false)
+			) throw new \Exception($conn->error);
+			
+		}
+		
+		
 		/**
 		 *	Saves this organization's data to the
 		 *	database.
